@@ -1,0 +1,330 @@
+{% extends "layout.html" %}
+
+{% block content %}
+{% set display_name = current_user.full_name or current_user.username or 'Kullanıcı' %}
+{% set name_parts = display_name.strip().split() %}
+{% set initials = (name_parts[0][0] + name_parts[-1][0]).upper() if name_parts|length >= 2 else (display_name[:2] or 'U').upper() %}
+{% set role_label = 'Öğretmen' if current_user.role == 'teacher' else 'Öğrenci' %}
+<style>
+    .profile-page-wrapper {
+        max-width: 900px;
+        margin-left: auto;
+        margin-right: auto;
+        padding-left: 1rem;
+        padding-right: 1rem;
+        animation: profileFadeIn 0.4s ease-out;
+    }
+    @keyframes profileFadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .profile-header {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+        border-radius: var(--listify-radius-lg);
+        padding: 2rem 2.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.75rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.25);
+        position: relative;
+        overflow: hidden;
+    }
+    .profile-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 60%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    [data-theme="dark"] .profile-header {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .profile-avatar {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.25);
+        backdrop-filter: blur(8px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+        color: #fff;
+        flex-shrink: 0;
+        border: 3px solid rgba(255,255,255,0.5);
+    }
+    .profile-header-text { position: relative; z-index: 1; }
+    .profile-header-text h1 {
+        color: #fff;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem 0;
+    }
+    .profile-header-text .profile-role {
+        color: rgba(255,255,255,0.9);
+        font-size: 0.9375rem;
+        font-weight: 500;
+    }
+    .profile-card-custom {
+        background: var(--listify-card-bg, #fff);
+        border: 1px solid var(--listify-border, #e5e7eb);
+        border-radius: var(--listify-radius-lg);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    [data-theme="dark"] .profile-card-custom {
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .profile-card-custom:last-child { margin-bottom: 2rem; }
+    .profile-card-custom .card-header-custom {
+        padding: 1.25rem 1.5rem;
+        background: var(--listify-bg, #fafbfc);
+        border-bottom: 1px solid var(--listify-border, #e5e7eb);
+        font-weight: 700;
+        font-size: 1rem;
+        color: var(--listify-heading, #1a1a1a);
+    }
+    [data-theme="dark"] .profile-card-custom .card-header-custom {
+        background: rgba(255,255,255,0.03);
+    }
+    .profile-card-custom .card-body-custom {
+        padding: 1.5rem 1.75rem;
+    }
+    .profile-form-group {
+        margin-bottom: 1.25rem;
+        position: relative;
+    }
+    .profile-form-group:last-of-type { margin-bottom: 0; }
+    .profile-form-label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--listify-heading, #1a1a1a);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .profile-form-label i {
+        color: var(--listify-text-muted, #6b7280);
+        font-size: 1rem;
+    }
+    .profile-input-wrap {
+        position: relative;
+    }
+    .profile-input-wrap .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--listify-text-muted, #9ca3af);
+        font-size: 1.05rem;
+        pointer-events: none;
+    }
+    .profile-input-wrap .form-control {
+        padding: 0.75rem 1rem 0.75rem 2.75rem;
+        font-size: 0.9375rem;
+        border-radius: var(--listify-radius);
+        border: 1px solid var(--listify-border, #e5e7eb);
+        background: var(--listify-card-bg, #fff);
+        color: var(--listify-text, #1a1a1a);
+        transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .profile-input-wrap .form-control:focus {
+        outline: none;
+        border-color: var(--listify-primary, #3b82f6);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+    }
+    .profile-input-wrap.password-wrap .form-control { padding-right: 2.75rem; }
+    .profile-hint {
+        font-size: 0.8125rem;
+        color: var(--listify-text-muted, #6b7280);
+        margin-top: 0.35rem;
+    }
+    .profile-buttons { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.75rem; }
+    .profile-btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        border: none;
+        color: #fff;
+        font-weight: 600;
+        padding: 0.6rem 1.25rem;
+        border-radius: var(--listify-radius);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .profile-btn-primary:hover {
+        color: #fff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+    .profile-btn-secondary {
+        background: transparent;
+        border: 1px solid var(--listify-border, #d1d5db);
+        color: var(--listify-text, #374151);
+        font-weight: 500;
+        padding: 0.6rem 1.25rem;
+        border-radius: var(--listify-radius);
+    }
+    .profile-btn-secondary:hover {
+        background: var(--listify-bg, #f9fafb);
+        color: var(--listify-text);
+        border-color: var(--listify-border);
+    }
+    .verification-banner { border-radius: var(--listify-radius); border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+</style>
+
+<div class="profile-page-wrapper mt-4">
+    {% if not is_verified %}
+    <div class="alert alert-warning verification-banner d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3 mb-4" role="alert">
+        {% if not current_user.email or not (current_user.email or '')|trim %}
+        <span class="flex-grow-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Hesabınızı doğrulamak için bir e-posta adresi ekleyin.</span>
+        <form method="post" action="{{ url_for('add_email_send_verification') }}" class="d-flex flex-wrap gap-2 flex-grow-1 flex-sm-grow-0">
+            <input type="email" name="email" class="form-control form-control-sm" placeholder="E-posta adresiniz" required style="min-width: 180px;">
+            <button type="submit" class="btn btn-warning btn-sm">Gönder</button>
+        </form>
+        {% else %}
+        <span class="flex-grow-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Hesabınız henüz doğrulanmadı. Lütfen e-posta adresinizi doğrulayın.</span>
+        <a href="{{ url_for('verify_code') }}" class="btn btn-warning btn-sm">Kodu Gir</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Profil Başlık Alanı -->
+    <div class="profile-header">
+        <div class="profile-avatar">{{ initials }}</div>
+        <div class="profile-header-text">
+            <h1>{{ display_name }}</h1>
+            <span class="profile-role"><i class="bi bi-person-badge me-1"></i>{{ role_label }}</span>
+        </div>
+    </div>
+
+    <!-- Kart 1: Kişisel Bilgiler -->
+    <div class="profile-card-custom">
+        <div class="card-header-custom">
+            <i class="bi bi-person-vcard me-2"></i>Kişisel Bilgiler
+        </div>
+        <div class="card-body-custom">
+            <form method="POST" action="{{ url_for('profile') }}">
+                <div class="profile-form-group">
+                    <label class="profile-form-label">
+                        <i class="bi bi-person"></i> Ad-Soyad <span class="text-danger">*</span>
+                    </label>
+                    <div class="profile-input-wrap">
+                        <i class="bi bi-person input-icon"></i>
+                        <input type="text" name="full_name" class="form-control" value="{{ current_user.full_name or '' }}" placeholder="Örn: Ayşe Yılmaz" required>
+                    </div>
+                </div>
+                <div class="profile-form-group">
+                    <label class="profile-form-label">
+                        <i class="bi bi-envelope"></i> E-posta
+                    </label>
+                    <div class="profile-input-wrap">
+                        <i class="bi bi-envelope input-icon"></i>
+                        <input type="email" name="email" class="form-control" value="{{ current_user.email or '' }}" placeholder="ornek@eposta.com" autocomplete="email">
+                    </div>
+                    <p class="profile-hint">Şifre sıfırlama için kullanılır.</p>
+                </div>
+                {% if current_user.role == 'student' %}
+                <div class="profile-form-group">
+                    <label class="profile-form-label">
+                        <i class="bi bi-123"></i> Öğrenci numarası
+                    </label>
+                    <div class="profile-input-wrap">
+                        <i class="bi bi-123 input-icon"></i>
+                        <input type="text" name="student_number" class="form-control" value="{{ current_user.student_number or '' }}" placeholder="Örn: 123456">
+                    </div>
+                    <p class="profile-hint">Başka bir kullanıcıda kayıtlı numara kullanılamaz.</p>
+                </div>
+                {% endif %}
+                <div class="profile-buttons">
+                    <button type="submit" class="btn profile-btn-primary"><i class="bi bi-check-lg me-1"></i>Güncelle</button>
+                    <a href="{{ url_for('dashboard') if current_user.role == 'teacher' else url_for('my_records') }}" class="btn profile-btn-secondary"><i class="bi bi-x-lg me-1"></i>İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Kart 2: Güvenlik -->
+    <div class="profile-card-custom">
+        <div class="card-header-custom">
+            <i class="bi bi-shield-lock me-2"></i>Güvenlik
+        </div>
+        <div class="card-body-custom">
+            <form method="POST" action="{{ url_for('change_password') }}" id="changePasswordForm">
+                <div class="profile-form-group">
+                    <label class="profile-form-label">
+                        <i class="bi bi-key"></i> Mevcut Şifre
+                    </label>
+                    <div class="profile-input-wrap password-wrap">
+                        <i class="bi bi-lock input-icon"></i>
+                        <input type="password" name="current_password" id="profileCurrentPassword" class="form-control" autocomplete="current-password" placeholder="Mevcut şifrenizi girin">
+                        <button type="button" class="password-toggle-btn" data-target="profileCurrentPassword" aria-label="Şifreyi göster">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="profile-form-group">
+                    <label class="profile-form-label">
+                        <i class="bi bi-key-fill"></i> Yeni Şifre
+                    </label>
+                    <div class="profile-input-wrap password-wrap">
+                        <i class="bi bi-lock-fill input-icon"></i>
+                        <input type="password" name="new_password" id="profileNewPassword" class="form-control" minlength="4" autocomplete="new-password" placeholder="Yeni şifrenizi girin">
+                        <button type="button" class="password-toggle-btn" data-target="profileNewPassword" aria-label="Şifreyi göster">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="profile-form-group">
+                    <label class="profile-form-label">
+                        <i class="bi bi-check2-square"></i> Yeni Şifre (Tekrar)
+                    </label>
+                    <div class="profile-input-wrap password-wrap">
+                        <i class="bi bi-lock-fill input-icon"></i>
+                        <input type="password" name="new_password_confirm" id="profileNewPasswordConfirm" class="form-control" minlength="4" autocomplete="new-password" placeholder="Yeni şifrenizi tekrar girin">
+                        <button type="button" class="password-toggle-btn" data-target="profileNewPasswordConfirm" aria-label="Şifreyi göster">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
+                    <div id="profilePasswordMismatch" class="invalid-feedback d-none">Şifreler eşleşmiyor.</div>
+                </div>
+                <div class="profile-buttons">
+                    <button type="submit" class="btn profile-btn-primary"><i class="bi bi-shield-check me-1"></i>Şifreyi Güncelle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var form = document.getElementById('changePasswordForm');
+    var newPw = document.getElementById('profileNewPassword');
+    var confirmPw = document.getElementById('profileNewPasswordConfirm');
+    var mismatch = document.getElementById('profilePasswordMismatch');
+    if (form && newPw && confirmPw) {
+        form.addEventListener('submit', function(e) {
+            if (newPw.value && newPw.value !== confirmPw.value) {
+                e.preventDefault();
+                mismatch.classList.remove('d-none');
+                confirmPw.classList.add('is-invalid');
+                return false;
+            }
+        });
+        [newPw, confirmPw].forEach(function(inp) {
+            inp.addEventListener('input', function() {
+                if (newPw.value === confirmPw.value) {
+                    mismatch.classList.add('d-none');
+                    confirmPw.classList.remove('is-invalid');
+                }
+            });
+        });
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}Listify - Liste Yönetim Sistemi{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        /* ===== PROFESSIONAL SAAS UI – Baştan Yazılmış Stil Sistemi ===== */
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        :root {
+            --listify-radius: 12px;
+            --listify-radius-lg: 16px;
+            --listify-font: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        [data-theme="dark"] {
+            --listify-bg: #1a1d21;
+            --listify-card-bg: #25282d;
+            --listify-text: #e4e6ea;
+            --listify-text-muted: #9ca3af;
+            --listify-heading: #f3f4f6;
+            --listify-border: rgba(255,255,255,0.08);
+            --listify-divider: #373b41;
+            --listify-navbar: #25282d;
+            --listify-table-line: #373b41;
+            --listify-table-hover: rgba(59, 130, 246, 0.08);
+        }
+
+        /* 1. GLOBAL STYLE (Modern Base) */
+        body {
+            font-family: var(--listify-font);
+            font-weight: 400;
+            background-color: #f4f7f6;
+            color: #1a1a1a;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            padding-bottom: env(safe-area-inset-bottom);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+        [data-theme="dark"] body {
+            background-color: var(--listify-bg);
+            color: var(--listify-text);
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-weight: 700;
+            color: #1a1a1a;
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+            margin-bottom: 0.5em;
+        }
+        [data-theme="dark"] h1, [data-theme="dark"] h2, [data-theme="dark"] h3,
+        [data-theme="dark"] h4, [data-theme="dark"] h5, [data-theme="dark"] h6 {
+            color: var(--listify-heading);
+        }
+        .text-muted, .small { color: #6b7280 !important; }
+        [data-theme="dark"] .text-muted, [data-theme="dark"] .small { color: var(--listify-text-muted) !important; }
+        .fw-bold, .card-title { color: #1a1a1a; }
+        [data-theme="dark"] .fw-bold, [data-theme="dark"] .card-title { color: var(--listify-heading); }
+
+        /* 6. SPACING – Sayfa kenarları, max-width */
+        .listify-container {
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 2.5rem;
+            padding-right: 2.5rem;
+        }
+
+        /* 5. NAVBAR – Sticky, gölge, üst boşluk yok */
+        .navbar {
+            margin: 0 !important;
+            margin-bottom: 0 !important;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            position: sticky !important;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+        }
+        .navbar.fixed-top {
+            position: sticky !important;
+        }
+        [data-theme="dark"] .navbar { box-shadow: 0 2px 12px rgba(0,0,0,0.3); }
+        .navbar-listify {
+            background-color: #ffffff !important;
+            border: none !important;
+        }
+        [data-theme="dark"] .navbar-listify {
+            background-color: var(--listify-navbar) !important;
+        }
+        .navbar-brand {
+            color: #1a1a1a !important;
+            font-weight: 700;
+            font-size: 1.35rem;
+            letter-spacing: -0.03em;
+        }
+        [data-theme="dark"] .navbar-brand { color: #fff !important; }
+        .nav-link {
+            color: #374151 !important;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.3s ease;
+        }
+        [data-theme="dark"] .nav-link { color: rgba(255,255,255,0.9) !important; }
+        .nav-link:hover { color: #1a1a1a !important; }
+        [data-theme="dark"] .nav-link:hover { color: #fff !important; }
+        .navbar .dropdown-toggle {
+            color: #374151 !important;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        [data-theme="dark"] .navbar .dropdown-toggle { color: #fff !important; }
+        [data-theme="light"] .navbar .dropdown-toggle::after,
+        .navbar .dropdown-toggle::after { border-top-color: currentColor; }
+        [data-theme="light"] .navbar-toggler { border-color: rgba(0,0,0,0.15); }
+        [data-theme="light"] .navbar-toggler-icon {
+            filter: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%231a1a1a' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+        .navbar .dropdown-menu {
+            border-radius: var(--listify-radius-lg);
+            border: 1px solid #eee;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            background: #fff;
+        }
+        [data-theme="dark"] .navbar .dropdown-menu {
+            border-color: var(--listify-border);
+            background: var(--listify-card-bg);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .navbar .dropdown-item {
+            color: #1a1a1a;
+            font-size: 0.9375rem;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            margin: 0 4px;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        [data-theme="dark"] .navbar .dropdown-item { color: var(--listify-text); }
+        .navbar .dropdown-item:hover { background-color: #f4f7f6; }
+        [data-theme="dark"] .navbar .dropdown-item:hover { background-color: var(--listify-divider); }
+
+        /* Dropdown / listify utilities */
+        .listify-dropdown-menu {
+            border-radius: var(--listify-radius-lg);
+            border: 1px solid #eee;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            background: #fff;
+            padding: 0.35rem;
+        }
+        [data-theme="dark"] .listify-dropdown-menu {
+            border-color: var(--listify-border);
+            background: var(--listify-card-bg);
+        }
+        .listify-dropdown-menu .dropdown-item {
+            color: #1a1a1a;
+            padding: 0.5rem 0.75rem;
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+        [data-theme="dark"] .listify-dropdown-menu .dropdown-item { color: var(--listify-text); }
+        .listify-dropdown-menu .dropdown-item:hover { background-color: #f4f7f6; }
+        [data-theme="dark"] .listify-dropdown-menu .dropdown-item:hover { background-color: var(--listify-divider); }
+        .dropdown-toggle-listify {
+            border-radius: var(--listify-radius);
+            border: 1px solid #e5e7eb;
+            color: #374151;
+            padding: 0.4rem 0.75rem;
+            transition: all 0.3s ease;
+        }
+        [data-theme="dark"] .dropdown-toggle-listify { border-color: var(--listify-border); color: var(--listify-text); }
+
+        /* 2. LISTE KARTLARI (Cards) – Beyaz, kenarlıksız, derinlik, hover scale */
+        .card {
+            border: none !important;
+            border-radius: var(--listify-radius-lg);
+            background: #ffffff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        [data-theme="dark"] .card {
+            background: var(--listify-card-bg);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+        }
+        [data-theme="dark"] .card:hover {
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+        }
+        .card-body {
+            padding: 1.5rem 1.75rem;
+            color: #1a1a1a;
+        }
+        [data-theme="dark"] .card-body { color: var(--listify-text); }
+        .card-header {
+            border-radius: var(--listify-radius-lg) var(--listify-radius-lg) 0 0;
+            font-weight: 600;
+            border-bottom: 1px solid #eee;
+            padding: 1rem 1.75rem;
+            background: #fafbfc !important;
+            color: #1a1a1a;
+        }
+        [data-theme="dark"] .card-header {
+            border-bottom-color: var(--listify-border);
+            background: rgba(255,255,255,0.03) !important;
+            color: var(--listify-heading);
+        }
+        .card-header:not([style*="background:#f8f9fa"]):not([style*="background: #f8f9fa"]) {
+            background: #fafbfc !important;
+            color: #1a1a1a;
+        }
+        [data-theme="dark"] .card-header { color: var(--listify-heading); }
+        .card-badge-top { position: absolute; top: 1rem; right: 1rem; z-index: 1; }
+
+        /* 3. TABLO – İnce çizgi, ferah padding, hover mavi */
+        .table {
+            color: #1a1a1a;
+            border-collapse: collapse;
+        }
+        [data-theme="dark"] .table { color: var(--listify-text); }
+        .table thead th {
+            background: #fafbfc !important;
+            color: #1a1a1a !important;
+            border: none !important;
+            border-bottom: 1px solid #eee !important;
+            padding: 1rem 1.25rem;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        [data-theme="dark"] .table thead th {
+            background: rgba(255,255,255,0.04) !important;
+            color: var(--listify-text-muted) !important;
+            border-bottom-color: var(--listify-table-line) !important;
+        }
+        .table tbody tr {
+            border-bottom: 1px solid #eee;
+            transition: background 0.3s ease;
+        }
+        [data-theme="dark"] .table tbody tr { border-bottom-color: var(--listify-table-line); }
+        .table tbody tr:nth-of-type(odd) { background: transparent; }
+        .table tbody tr:hover {
+            background-color: #f0f7ff !important;
+        }
+        [data-theme="dark"] .table tbody tr:hover {
+            background-color: var(--listify-table-hover) !important;
+        }
+        .table td, .table th {
+            border: none !important;
+            padding: 1rem 1.25rem;
+            vertical-align: middle;
+        }
+        .table, .table td, .table th { color: inherit !important; }
+
+        /* 4. BUTONLAR – Gradient yok, pastel yeşil/kırmızı, transition */
+        .btn {
+            border-radius: var(--listify-radius);
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background-color: #2563eb;
+            border-color: #2563eb;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background-color: #1d4ed8;
+            border-color: #1d4ed8;
+            color: #fff;
+        }
+        .btn-success {
+            background-color: #d1fae5;
+            border-color: #d1fae5;
+            color: #065f46;
+        }
+        .btn-success:hover {
+            background-color: #a7f3d0;
+            border-color: #a7f3d0;
+            color: #065f46;
+        }
+        .btn-danger {
+            background-color: #fee2e2;
+            border-color: #fee2e2;
+            color: #991b1b;
+        }
+        .btn-danger:hover {
+            background-color: #fecaca;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+        .btn-outline-primary {
+            border: 1px solid #d1d5db;
+            background: transparent;
+            color: #374151;
+        }
+        .btn-outline-primary:hover {
+            background: #f4f7f6;
+            border-color: #d1d5db;
+            color: #1a1a1a;
+        }
+        .btn-outline-secondary {
+            border: 1px solid #d1d5db;
+            background: transparent;
+            color: #6b7280;
+        }
+        .btn-outline-secondary:hover {
+            background: #f4f7f6;
+            border-color: #d1d5db;
+            color: #1a1a1a;
+        }
+        .btn-outline-danger {
+            border: 1px solid #fecaca;
+            background: transparent;
+            color: #991b1b;
+        }
+        .btn-outline-danger:hover {
+            background: #fee2e2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+        [data-theme="dark"] .btn-outline-primary,
+        [data-theme="dark"] .btn-outline-secondary {
+            border-color: var(--listify-border);
+            color: var(--listify-text);
+        }
+        [data-theme="dark"] .btn-outline-primary:hover,
+        [data-theme="dark"] .btn-outline-secondary:hover {
+            background: var(--listify-divider);
+            color: var(--listify-heading);
+        }
+        .btn-sm { padding: 0.4rem 0.85rem; font-size: 0.8125rem; }
+        .btn-touch { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 0.85rem; }
+
+        /* Formlar */
+        .form-control, .form-select {
+            border-radius: var(--listify-radius);
+            border: 1px solid #e5e7eb;
+            background: #fff;
+            color: #1a1a1a;
+            padding: 0.6rem 0.9rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        [data-theme="dark"] .form-control,
+        [data-theme="dark"] .form-select {
+            border-color: var(--listify-border);
+            background: rgba(255,255,255,0.05);
+            color: var(--listify-text);
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            outline: none;
+        }
+        .form-label { color: #374151 !important; font-weight: 500; }
+        [data-theme="dark"] .form-label { color: var(--listify-text-muted) !important; }
+        .password-wrap { position: relative; }
+        .password-wrap .form-control { padding-right: 2.75rem; }
+        .password-toggle-btn {
+            position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: #9ca3af;
+            padding: 0.25rem; cursor: pointer; border-radius: var(--listify-radius);
+            transition: color 0.3s ease;
+        }
+
+        /* Badges */
+        .badge-status-approved, .badge-glass.badge-approved {
+            background: #d1fae5 !important; color: #065f46 !important;
+        }
+        .badge-status-pending, .badge-glass.badge-pending {
+            background: #fef3c7 !important; color: #92400e !important;
+        }
+        .badge-status-rejected, .badge-glass.badge-rejected {
+            background: #fee2e2 !important; color: #991b1b !important;
+        }
+        .badge-status-approved, .badge-status-pending, .badge-status-rejected,
+        .badge-glass { padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; }
+
+        .badge-countdown.expired, .badge-countdown-inline.expired { background: #fee2e2 !important; color: #991b1b !important; }
+        .badge-countdown.ongoing, .badge-countdown-inline.ongoing { background: #d1fae5 !important; color: #065f46 !important; }
+        .badge-countdown.soon, .badge-countdown-inline.soon { background: #fef3c7 !important; color: #92400e !important; }
+
+        /* Countdown, analiz kartları */
+        .countdown-box {
+            background: #1a1a1a;
+            color: #fff;
+            border-radius: var(--listify-radius);
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+        }
+        [data-theme="dark"] .countdown-box { background: var(--listify-navbar); }
+        [data-theme="light"] .analiz-kart-1 .rounded-circle { background: #1a1a1a !important; color: #fff !important; }
+
+        /* Modal, Alert, Empty state */
+        .modal-content {
+            border-radius: var(--listify-radius-lg);
+            border: none;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+        [data-theme="dark"] .modal-content {
+            background: var(--listify-card-bg);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+        }
+        .modal-glass, .modal-content.modal-glass {
+            background: #fff !important;
+            border-radius: var(--listify-radius-lg);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+        [data-theme="dark"] .modal-glass, [data-theme="dark"] .modal-content.modal-glass {
+            background: var(--listify-card-bg) !important;
+        }
+        .modal-backdrop { z-index: 1040 !important; }
+        .modal { z-index: 1050 !important; }
+        .modal.show { z-index: 1050 !important; }
+        .alert { border-radius: var(--listify-radius); border: none; }
+        .empty-state {
+            color: #6b7280;
+            text-align: center;
+            padding: 3rem 2rem;
+        }
+        [data-theme="dark"] .empty-state { color: var(--listify-text-muted); }
+        a.listify-link, .listify-link { color: #2563eb; font-weight: 500; }
+        [data-theme="dark"] .listify-link { color: #60a5fa; }
+        hr { border-color: #eee; }
+        [data-theme="dark"] hr { border-color: var(--listify-border); }
+
+        /* Auth card */
+        .auth-card {
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+            border: none;
+            border-radius: var(--listify-radius-lg);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .auth-card .card-header { background: #1a1a1a !important; color: #fff !important; }
+        [data-theme="dark"] .auth-card .card-header { background: var(--listify-navbar) !important; }
+
+        /* Announcement, feedback */
+        .announcement-box {
+            background: #fffbeb !important;
+            border: none !important;
+            border-left: 4px solid #d4a017 !important;
+            color: #5c4a0a !important;
+            padding: 1rem 1.25rem !important;
+            border-radius: var(--listify-radius);
+        }
+        [data-theme="dark"] .announcement-box {
+            background: rgba(254, 243, 199, 0.1) !important;
+            border-left-color: #d4a017 !important;
+            color: #fef3c7 !important;
+        }
+        .feedback-scroll {
+            max-height: 180px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+        .feedback-scroll::-webkit-scrollbar { width: 6px; }
+        .feedback-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+        .hoca-yorumu-box .hoca-yorumu-content,
+        .hoca-yorumu-content { word-break: break-word; overflow-wrap: anywhere; }
+
+        .listify-fade-out { animation: listifyFadeOut 0.3s ease forwards; }
+        @keyframes listifyFadeOut {
+            to { opacity: 0; transform: scale(0.96); }
+        }
+
+        /* Mobil: responsive tablo (overflow-x) */
+        .table-responsive-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            margin: 0 -1rem;
+        }
+        @media (min-width: 768px) {
+            .table-responsive-wrap { margin: 0; }
+        }
+
+        /* Mobil: dokunmatik dostu (min 44px), input zoom engeli */
+        @media (max-width: 767.98px) {
+            .listify-container { padding-left: 1.25rem; padding-right: 1.25rem; max-width: 100%; }
+            .navbar .nav-link, .navbar .dropdown-toggle {
+                padding: 0.5rem 0.75rem !important;
+                min-height: 44px !important;
+                display: flex !important;
+                align-items: center !important;
+            }
+            #themeSwitcher { min-height: 44px !important; min-width: 44px !important; padding: 0.5rem !important; }
+            .btn, .btn-sm { min-height: 44px !important; }
+            .dropdown-toggle { min-height: 44px !important; }
+            .dashboard-toolbar-btn,
+            .btn.dropdown-toggle-listify { min-height: 44px !important; min-width: 44px !important; }
+            .form-control, .form-select, input, select, textarea { font-size: 16px !important; }
+            .table td, .table th { padding: 0.75rem 0.6rem; }
+        }
+        @media (max-width: 575.98px) {
+            .listify-container { padding-left: 1rem; padding-right: 1rem; }
+        }
+        @media print {
+            .no-print, nav, .navbar { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-listify fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">Listify</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Menü">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
+                    <li class="nav-item"><a class="nav-link" href="/">Anasayfa</a></li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <button type="button" class="btn btn-link nav-link py-2 px-2 no-print" id="themeSwitcher" title="Aydınlık moda geç" aria-label="Tema değiştir">
+                            <i class="bi bi-sun-fill" id="themeIconLight" title="Aydınlık moda geç"></i>
+                            <i class="bi bi-moon-stars-fill d-none" id="themeIconDark" title="Karanlık moda geç"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle me-2" style="color:var(--listify-accent);"></i>{{ current_user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="bi bi-person me-2 text-secondary"></i>Profilim</a></li>
+                            {% if current_user.role == 'teacher' %}
+                            <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i class="bi bi-grid me-2 text-secondary"></i>Panelim</a></li>
+                            {% else %}
+                            <li><a class="dropdown-item" href="{{ url_for('my_records') }}"><i class="bi bi-journal-check me-2 text-secondary"></i>Kayıtlarım</a></li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Çıkış Yap</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Giriş Yap</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Kayıt Ol</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- Toast: başarı mesajları sağ üstte 3 sn -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" id="listifyToastContainer" style="z-index: 1090;">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                {% if category == 'success' %}
+                <div class="toast align-items-center text-bg-success border-0 listify-success-toast" role="alert" data-bs-autohide="true" data-bs-delay="3000">
+                    <div class="d-flex">
+                        <div class="toast-body"><i class="bi bi-check-circle-fill me-2"></i>{{ message }}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
+    </div>
+    <div class="listify-container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category != 'success' %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+    <div class="listify-container mt-4 pb-5">
+        {% block content %}{% endblock %}
+    </div>
+    {% block modals %}{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    (function() {
+        var key = 'listify-theme';
+        var darkIcon = document.getElementById('themeIconDark');
+        var lightIcon = document.getElementById('themeIconLight');
+        function applyTheme(theme) {
+            theme = theme || 'dark';
+            document.documentElement.setAttribute('data-theme', theme);
+            if (theme === 'light') {
+                if (lightIcon) lightIcon.classList.add('d-none');
+                if (darkIcon) darkIcon.classList.remove('d-none');
+            } else {
+                if (lightIcon) lightIcon.classList.remove('d-none');
+                if (darkIcon) darkIcon.classList.add('d-none');
+            }
+            try { localStorage.setItem(key, theme); } catch(e) {}
+        }
+        var stored = localStorage.getItem(key);
+        applyTheme(stored || 'dark');
+        var btn = document.getElementById('themeSwitcher');
+        if (btn) btn.addEventListener('click', function() {
+            var cur = document.documentElement.getAttribute('data-theme');
+            applyTheme(cur === 'light' ? 'dark' : 'light');
+        });
+    })();
+    /* Parola görünürlük toggle */
+    document.querySelectorAll('.password-toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var id = this.getAttribute('data-target');
+            if (!id) return;
+            var input = document.getElementById(id);
+            var icon = this.querySelector('i');
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye'); icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash'); icon.classList.add('bi-eye');
+            }
+        });
+    });
+    /* Başarı toast'larını göster (3 sn) */
+    document.querySelectorAll('.listify-success-toast').forEach(function(el) {
+        var t = new bootstrap.Toast(el, { autohide: true, delay: 3000 });
+        t.show();
+    });
+    /* Kalan Süre rozetleri - dinamik güncelleme */
+    window.DEBUG_COUNTDOWN = /[?&]debug=countdown/i.test(location.search);
+    (function() {
+        var debugLogged = false;
+        function updateCountdownBadges() {
+            document.querySelectorAll('.badge-countdown, .badge-countdown-inline').forEach(function(el) {
+                var exp = el.getAttribute('data-expires');
+                if (!exp || exp.length < 10) return;
+                var expDate = new Date(exp);
+                var now = new Date();
+                if (window.DEBUG_COUNTDOWN && !debugLogged) {
+                    debugLogged = true;
+                    console.log('[Countdown] data-expires:', exp, '| parsed:', expDate.toISOString(), '| now:', now.toISOString());
+                }
+                var diff = expDate - now;
+                if (diff <= 0) {
+                    el.textContent = 'Süresi Doldu';
+                    el.className = (el.className.replace(/expired|ongoing|soon/g, '') + ' expired').trim();
+                    return;
+                }
+                var totalSec = Math.floor(diff / 1000);
+                var sec = totalSec % 60;
+                var totalMin = Math.floor(totalSec / 60);
+                var min = totalMin % 60;
+                var totalHr = Math.floor(totalMin / 60);
+                var hr = totalHr % 24;
+                var days = Math.floor(totalHr / 24);
+                var txt = '';
+                if (days > 0) txt = days + ' Gün ' + hr + ' Saat Kaldı';
+                else if (totalHr > 0) txt = totalHr + ' Saat ' + min + ' Dk Kaldı';
+                else if (totalMin > 0) txt = totalMin + ' Dk Kaldı';
+                else txt = totalSec + ' Sn Kaldı';
+                el.textContent = txt;
+                el.className = (el.className.replace(/expired|ongoing|soon/g, '') + (days <= 1 && totalHr < 24 ? ' soon' : ' ongoing')).trim();
+            });
+        }
+        updateCountdownBadges();
+        setInterval(updateCountdownBadges, 1000);
+    })();
+    /* Global: dosya hatası vb. için toast */
+    window.showListifyToast = function(msg, type) {
+        type = type || 'danger';
+        var cont = document.getElementById('listifyToastContainer');
+        if (!cont) return;
+        var div = document.createElement('div');
+        div.className = 'toast align-items-center text-bg-' + type + ' border-0';
+        div.setAttribute('role', 'alert');
+        div.innerHTML = '<div class="d-flex"><div class="toast-body">' + (type === 'success' ? '<i class="bi bi-check-circle-fill me-2"></i>' : '<i class="bi bi-exclamation-triangle-fill me-2"></i>') + msg + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+        cont.appendChild(div);
+        var t = new bootstrap.Toast(div, { autohide: true, delay: 4000 });
+        t.show();
+        div.addEventListener('hidden.bs.toast', function() { div.remove(); });
+    };
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

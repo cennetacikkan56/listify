@@ -1,0 +1,447 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+    .list-search-wrap { position: relative; }
+    .list-search-box {
+        max-width: 380px;
+        width: 100%;
+        padding: 0.65rem 1rem 0.65rem 2.75rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        background: var(--listify-card-bg);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        font-size: 0.9375rem;
+        color: var(--listify-text);
+        transition: max-width 0.35s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .list-search-box:focus {
+        outline: none;
+        max-width: 480px;
+        border-color: var(--listify-primary);
+        box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.12);
+    }
+    .list-search-box::placeholder { color: var(--listify-text-muted); }
+    .list-search-wrap .bi-search { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--listify-text-muted); font-size: 1rem; pointer-events: none; transition: color 0.25s; }
+    .list-search-wrap:focus-within .bi-search { color: var(--listify-text); }
+    .list-search-no-results { color: var(--listify-text-muted); font-size: 0.9375rem; text-align: center; padding: 2rem 1rem; display: none; }
+    .email-alert { border-radius: var(--listify-radius); border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .verification-banner { border-radius: 0.75rem; border: none; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+    .list-check-col { width: 36px; opacity: 0; max-width: 0; overflow: hidden; transition: opacity 0.3s ease, max-width 0.3s ease; }
+    .list-cards-wrapper.selection-mode .list-check-col { opacity: 1; max-width: 36px; }
+    .dashboard-toolbar-btn { color: var(--listify-text); border-color: var(--listify-border); background: var(--listify-card-bg); }
+    .dashboard-toolbar-btn:hover { color: var(--listify-primary); border-color: var(--listify-primary); background: var(--listify-card-bg); }
+    .list-card .card {
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+        overflow: hidden;
+    }
+    .list-card .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+    }
+    [data-theme="dark"] .list-card .card {
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    [data-theme="dark"] .list-card .card:hover {
+        box-shadow: 0 12px 24px rgba(0,0,0,0.3);
+    }
+    #dashboardBulkBar {
+        position: sticky;
+        top: 0;
+        z-index: 1020;
+        background: #ffffff !important;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    [data-theme="dark"] #dashboardBulkBar {
+        background: var(--listify-card-bg, #25282d) !important;
+    }
+    .list-cards-wrapper {
+        display: grid;
+        gap: 1.75rem;
+        grid-template-columns: 1fr;
+    }
+    @media (min-width: 768px) {
+        .list-cards-wrapper { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 992px) {
+        .list-cards-wrapper { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 1200px) {
+        .list-cards-wrapper { grid-template-columns: repeat(4, 1fr); }
+    }
+    .list-card-top-badges {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        z-index: 2;
+    }
+    .list-card-badge-code {
+        background: rgba(59, 130, 246, 0.12);
+        color: #1e40af;
+        font-weight: 600;
+        font-size: 0.75rem;
+        padding: 0.35rem 0.65rem;
+        border-radius: 8px;
+    }
+    [data-theme="dark"] .list-card-badge-code {
+        background: rgba(59, 130, 246, 0.2);
+        color: #93c5fd;
+    }
+    .list-card-status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+    .list-card-status-pill.active {
+        background: #dcfce7;
+        color: #166534;
+    }
+    .list-card-status-pill.deadline {
+        background: #ffedd5;
+        color: #c2410c;
+    }
+    [data-theme="dark"] .list-card .card-title { color: var(--listify-heading) !important; }
+    .list-card-status-pill.completed {
+        background: #d1fae5;
+        color: #065f46;
+    }
+    [data-theme="dark"] .list-card-status-pill.active { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+    [data-theme="dark"] .list-card-status-pill.deadline { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
+    [data-theme="dark"] .list-card-status-pill.completed { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    .list-card .card-body { padding: 1.25rem 1.35rem; }
+    .list-card-meta { font-size: 0.8rem; color: #94a3b8 !important; }
+    .list-card-meta i { font-size: 0.7rem; color: #94a3b8; }
+    [data-theme="dark"] .list-card-meta { color: var(--listify-text-muted) !important; }
+    [data-theme="dark"] .list-card-meta i { color: var(--listify-text-muted); }
+    .list-card-action-bar {
+        margin: 1rem -1.35rem -1.25rem -1.35rem;
+        padding: 0.65rem 1.35rem;
+        border-top: 1px solid var(--listify-border);
+        background: rgba(248, 250, 252, 0.8);
+    }
+    [data-theme="dark"] .list-card-action-bar { background: rgba(0,0,0,0.15); }
+    .stat-card { color: #ffffff !important; }
+    .stat-card p, .stat-card .small { color: #ffffff !important; font-weight: 700; }
+    .stat-card .fs-4 { font-weight: 700; }
+    .stat-card .card-body { display: flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1rem; }
+    .stat-card .rounded-circle { margin-right: 0.5rem !important; flex-shrink: 0; }
+    @media (max-width: 767.98px) {
+        .list-cards-wrapper.selection-mode { padding-bottom: 5rem; }
+        #dashboardBulkBar {
+            position: fixed !important;
+            top: auto !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        }
+        #dashboardBulkBar .d-flex { justify-content: center; }
+    }
+</style>
+<div class="mt-4">
+    {% if not is_verified %}
+    <div class="alert alert-warning verification-banner d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3 mb-4" role="alert">
+        {% if not current_user.email or not (current_user.email or '')|trim %}
+        <span class="flex-grow-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Hesabınızı doğrulamak için bir e-posta adresi ekleyin.</span>
+        <form method="post" action="{{ url_for('add_email_send_verification') }}" class="d-flex flex-wrap gap-2 flex-grow-1 flex-sm-grow-0">
+            <input type="email" name="email" class="form-control form-control-sm" placeholder="E-posta adresiniz" required style="min-width: 180px;">
+            <button type="submit" class="btn btn-warning btn-sm">Gönder</button>
+        </form>
+        {% else %}
+        <span class="flex-grow-1"><i class="bi bi-exclamation-triangle-fill me-2"></i>Hesabınız henüz doğrulanmadı. Lütfen e-posta adresinizi doğrulayın.</span>
+        <a href="{{ url_for('verify_code') }}" class="btn btn-warning btn-sm">Kodu Gir</a>
+        {% endif %}
+    </div>
+    {% elif not current_user.email or not (current_user.email or '')|trim %}
+    <div class="alert alert-warning email-alert d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4" role="alert">
+        <span><i class="bi bi-exclamation-triangle-fill me-2"></i>Şifre kurtarma özelliğini kullanabilmek için lütfen profilinizden bir e-posta adresi tanımlayın!</span>
+        <a href="{{ url_for('profile') }}" class="btn btn-sm btn-warning">Profilimi Güncelle</a>
+    </div>
+    {% endif %}
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
+        <h2 class="mb-0">Panelim</h2>
+        <a href="{{ url_for('create_list') }}" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i> Yeni Liste
+        </a>
+    </div>
+
+    <!-- İstatistik kartları -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card h-100 border-0 shadow-sm stat-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <div class="card-body">
+                    <div class="rounded-circle p-2 bg-white bg-opacity-25 d-inline-flex"><i class="bi bi-list-ul fs-5"></i></div>
+                    <div class="d-inline-block">
+                        <p class="small mb-0" style="opacity:0.95">Toplam Liste</p>
+                        <p class="fw-bold mb-0 fs-4">{{ stat_total_lists or 0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card h-100 border-0 shadow-sm stat-card" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                <div class="card-body">
+                    <div class="rounded-circle p-2 bg-white bg-opacity-25 d-inline-flex"><i class="bi bi-people-fill fs-5"></i></div>
+                    <div class="d-inline-block">
+                        <p class="small mb-0" style="opacity:0.95">Toplam Öğrenci</p>
+                        <p class="fw-bold mb-0 fs-4">{{ stat_total_students or 0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card h-100 border-0 shadow-sm stat-card" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">
+                <div class="card-body">
+                    <div class="rounded-circle p-2 bg-white bg-opacity-25 d-inline-flex"><i class="bi bi-cloud-arrow-up-fill fs-5"></i></div>
+                    <div class="d-inline-block">
+                        <p class="small mb-0" style="opacity:0.95">Toplam Teslimat</p>
+                        <p class="fw-bold mb-0 fs-4">{{ stat_total_submissions or 0 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card h-100 border-0 shadow-sm stat-card" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <div class="card-body">
+                    <div class="rounded-circle p-2 bg-white bg-opacity-25 d-inline-flex"><i class="bi bi-percent fs-5"></i></div>
+                    <div class="d-inline-block">
+                        <p class="small mb-0" style="opacity:0.95">Onaylanma Oranı</p>
+                        <p class="fw-bold mb-0 fs-4">{{ stat_approval_rate or 0 }}%</p>
+                        <p class="small mb-0 mt-0" style="opacity:0.9; font-size:0.65rem; font-weight:600">Onaylanan ÷ Toplam öğrenci ×100</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-4 flex-wrap">
+        <div class="list-search-wrap flex-grow-1" style="min-width: 200px;">
+            <i class="bi bi-search"></i>
+            <input type="text" id="listSearch" class="form-control list-search-box" placeholder="Liste adı veya 6 haneli kod ile ara..." autocomplete="off">
+        </div>
+        <a href="{{ url_for('list_trash') }}" class="btn btn-outline-secondary btn-touch dashboard-toolbar-btn" title="Çöp Kutusu (Arşiv)">
+            <i class="bi bi-trash fs-5"></i>
+        </a>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-touch dashboard-toolbar-btn" type="button" id="dashboardToolbarDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Daha fazla">
+                <i class="bi bi-three-dots-vertical fs-5"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dashboardToolbarDropdown">
+                <li><a class="dropdown-item" href="#" id="filterHepsiniGoster"><i class="bi bi-grid-3x3-gap me-2"></i>Hepsini Göster</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" id="filterTamamlanmayan"><i class="bi bi-hourglass-split me-2"></i>Tamamlanmayan Listeleri Göster</a></li>
+                <li><a class="dropdown-item" href="#" id="filterTamamlanan"><i class="bi bi-check-circle me-2"></i>Tamamlanan Listeleri Göster</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#" id="btnCokluSecimModu"><i class="bi bi-check2-square me-2"></i>Seç</a></li>
+            </ul>
+        </div>
+    </div>
+    <p id="listSearchNoResults" class="list-search-no-results mb-0">Aradığınız kriterlere uygun liste bulunamadı.</p>
+
+    <!-- Toplu işlem barı -->
+    <div id="dashboardBulkBar" class="mb-3 p-3 rounded border" style="display:none; background: var(--listify-card-bg); border-color: var(--listify-border) !important;">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="fw-medium me-2" id="dashboardBulkCount">0 adet seçildi</span>
+            <button type="button" class="btn btn-success btn-sm" id="btnSecilenleriTamamla"><i class="bi bi-check-circle me-1"></i>Seçilenleri Tamamla</button>
+            <button type="button" class="btn btn-danger btn-sm" id="btnSecilenleriCopeAt"><i class="bi bi-trash me-1"></i>Çöpe At</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSecimModuKapat">İptal</button>
+        </div>
+    </div>
+
+    <div class="list-cards-wrapper" id="listCardsRow">
+        {% for liste in listeler %}
+        <div class="list-card" data-title="{{ liste.title|lower }}" data-code="{{ liste.unique_code|lower }}" data-list-id="{{ liste.id }}" data-tamamlanan="{{ '0' if liste._has_pending else '1' }}">
+            <div class="card h-100 position-relative">
+                <div class="list-check-col position-absolute top-0 start-0 p-2" style="z-index:5;">
+                    <input type="checkbox" class="form-check-input list-row-check" value="{{ liste.id }}">
+                </div>
+                <div class="list-card-top-badges">
+                    <span class="list-card-badge-code">{{ liste.unique_code }}</span>
+                    {% if liste.is_completed %}
+                    <span class="list-card-status-pill completed" title="Tamamlandı"><i class="bi bi-check-circle-fill"></i></span>
+                    {% elif liste.expires_at %}
+                    <span class="list-card-status-pill deadline" title="Süre"><i class="bi bi-clock"></i><span class="badge-countdown" data-expires="{{ liste.expires_at|istanbul_iso }}">—</span></span>
+                    {% else %}
+                    <span class="list-card-status-pill active" title="Aktif"><i class="bi bi-circle-fill" style="font-size:0.4rem;"></i></span>
+                    {% endif %}
+                </div>
+                <div class="card-body d-flex flex-column pt-4">
+                    <h5 class="card-title mb-3 text-truncate" style="font-weight:700; color:#1e293b; font-size:1.1rem;">{{ liste.title }}</h5>
+                    <div class="d-flex align-items-center gap-3 list-card-meta mb-4">
+                        <span><i class="bi bi-people me-1"></i>{{ liste._student_count or 0 }} öğrenci</span>
+                        {% if liste.created_at %}
+                        <span><i class="bi bi-calendar3 me-1"></i>{{ liste.created_at.strftime('%d.%m.%Y') }}</span>
+                        {% endif %}
+                    </div>
+                    <a href="{{ url_for('list_detail', list_id=liste.id) }}" class="btn btn-primary btn-sm w-100 btn-touch mb-0">Detaylar</a>
+                    <div class="list-card-action-bar d-flex align-items-center justify-content-between">
+                        {% if not liste.is_completed %}
+                        <div class="d-flex gap-2">
+                            <form action="{{ url_for('complete_list', list_id=liste.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-link text-success p-0 border-0 bg-transparent" style="font-size:0.95rem;" title="Tamamla"><i class="bi bi-check-circle"></i></button>
+                            </form>
+                            <a href="{{ url_for('list_detail', list_id=liste.id) }}?open=extend" class="btn btn-link text-secondary p-0" style="font-size:0.95rem;" title="Süreyi Uzat"><i class="bi bi-clock"></i></a>
+                        </div>
+                        {% else %}
+                        <div>
+                            <form action="{{ url_for('uncomplete_list', list_id=liste.id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-link text-warning p-0 border-0 bg-transparent" style="font-size:0.95rem;" title="Tamamlandıyı Kaldır"><i class="bi bi-x-circle"></i></button>
+                            </form>
+                        </div>
+                        {% endif %}
+                        <a href="{{ url_for('delete_list', list_id=liste.id) }}" class="btn btn-link text-danger p-0" style="font-size:0.95rem;" onclick="return confirm('Bu liste Çöp Kutusu\'na taşınsın mı? Geri yükleyebilirsiniz.');" title="Listeyi Sil"><i class="bi bi-trash"></i></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12" style="grid-column: 1 / -1;">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body empty-state">
+                    <i class="bi bi-inbox empty-state-icon d-block"></i>
+                    <p class="empty-state-text mb-0">Henüz liste yok. Yeni liste oluşturarak başlayabilirsiniz.</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var search = document.getElementById('listSearch');
+    var cards = document.querySelectorAll('.list-card');
+    var noResults = document.getElementById('listSearchNoResults');
+    var wrapper = document.querySelector('.list-cards-wrapper');
+    var bulkBar = document.getElementById('dashboardBulkBar');
+    var currentFilter = null;
+    function filterCards() {
+        var q = (search && search.value || '').trim().toLowerCase();
+        var visible = 0;
+        cards.forEach(function(card) {
+            var title = card.getAttribute('data-title') || '';
+            var code = card.getAttribute('data-code') || '';
+            var tamamlanan = card.getAttribute('data-tamamlanan');
+            var matchSearch = !q || title.indexOf(q) !== -1 || code.indexOf(q) !== -1;
+            var matchFilter = currentFilter === null || (currentFilter === 'tamamlanmayan' && tamamlanan === '0') || (currentFilter === 'tamamlanan' && tamamlanan === '1');
+            var match = matchSearch && matchFilter;
+            card.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+        if (noResults) noResults.style.display = (cards.length > 0 && (q || currentFilter) && visible === 0) ? 'block' : 'none';
+    }
+    if (search) search.addEventListener('input', filterCards);
+
+    function getSelectedListIds() {
+        var ids = [];
+        document.querySelectorAll('.list-row-check:checked').forEach(function(cb) {
+            var card = cb.closest('.list-card');
+            if (card && card.style.display !== 'none') ids.push(parseInt(cb.value, 10));
+        });
+        return ids;
+    }
+    function toggleSelectionMode(on) {
+        if (on) {
+            if (wrapper) wrapper.classList.add('selection-mode');
+            if (bulkBar) bulkBar.style.display = 'block';
+            updateBulkCount();
+        } else {
+            if (wrapper) wrapper.classList.remove('selection-mode');
+            if (bulkBar) bulkBar.style.display = 'none';
+            document.querySelectorAll('.list-row-check').forEach(function(cb) { cb.checked = false; });
+        }
+    }
+    function updateBulkCount() {
+        var ids = getSelectedListIds();
+        var el = document.getElementById('dashboardBulkCount');
+        if (el) el.textContent = ids.length + ' adet seçildi';
+        if (bulkBar) bulkBar.style.display = ids.length > 0 ? 'block' : 'none';
+    }
+    document.querySelectorAll('.list-row-check').forEach(function(cb) {
+        cb.addEventListener('change', updateBulkCount);
+    });
+    document.getElementById('btnCokluSecimModu') && document.getElementById('btnCokluSecimModu').addEventListener('click', function(e) { e.preventDefault(); toggleSelectionMode(true); });
+    document.getElementById('filterHepsiniGoster') && document.getElementById('filterHepsiniGoster').addEventListener('click', function(e) { e.preventDefault(); currentFilter = null; filterCards(); });
+    document.getElementById('filterTamamlanmayan') && document.getElementById('filterTamamlanmayan').addEventListener('click', function(e) { e.preventDefault(); currentFilter = currentFilter === 'tamamlanmayan' ? null : 'tamamlanmayan'; filterCards(); });
+    document.getElementById('filterTamamlanan') && document.getElementById('filterTamamlanan').addEventListener('click', function(e) { e.preventDefault(); currentFilter = currentFilter === 'tamamlanan' ? null : 'tamamlanan'; filterCards(); });
+    var btnCokluSecim = document.getElementById('btnCokluSecimModu');
+    if (btnCokluSecim) {
+        btnCokluSecim.addEventListener('click', function(e) { e.preventDefault(); toggleSelectionMode(true); });
+    }
+    var btnKapat = document.getElementById('btnSecimModuKapat');
+    if (btnKapat) btnKapat.addEventListener('click', function() { toggleSelectionMode(false); });
+    var btnCopeAt = document.getElementById('btnSecilenleriCopeAt');
+    if (btnCopeAt) {
+        btnCopeAt.addEventListener('click', function() {
+            var ids = getSelectedListIds();
+            if (ids.length === 0) {
+                if (window.showListifyToast) window.showListifyToast('Lütfen liste seçin.', 'warning');
+                else alert('Lütfen liste seçin.');
+                return;
+            }
+            var formData = new FormData();
+            ids.forEach(function(id) { formData.append('list_ids[]', id); });
+            fetch('/dashboard/bulk-soft-delete', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.ok) {
+                        ids.forEach(function(id) {
+                            var card = document.querySelector('.list-card[data-list-id="' + id + '"]');
+                            if (card) card.remove();
+                        });
+                        toggleSelectionMode(false);
+                        if (window.showListifyToast) window.showListifyToast('Liste(ler) Çöp Kutusu\'na taşındı. Geri yüklemek için çöp kutusunu kullanın.', 'success');
+                        else alert('Liste(ler) çöpe taşındı.');
+                    } else {
+                        if (window.showListifyToast) window.showListifyToast(data.error || 'İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                        else alert(data.error || 'Hata.');
+                    }
+                }).catch(function() {
+                    if (window.showListifyToast) window.showListifyToast('İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                    else alert('İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.');
+                });
+        });
+    }
+    var btnTamamla = document.getElementById('btnSecilenleriTamamla');
+    if (btnTamamla) {
+        btnTamamla.addEventListener('click', function() {
+            var ids = getSelectedListIds();
+            if (ids.length === 0) {
+                if (window.showListifyToast) window.showListifyToast('Lütfen liste seçin.', 'warning');
+                else alert('Lütfen liste seçin.');
+                return;
+            }
+            var formData = new FormData();
+            ids.forEach(function(id) { formData.append('list_ids[]', id); });
+            fetch('/dashboard/bulk-complete-lists', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.ok) {
+                        if (window.showListifyToast) window.showListifyToast(data.approved + ' öğrenci onaylandı.', 'success');
+                        else alert(data.approved + ' öğrenci onaylandı.');
+                        location.reload();
+                    } else {
+                        if (window.showListifyToast) window.showListifyToast(data.error || 'İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                        else alert(data.error || 'Hata.');
+                    }
+                }).catch(function() {
+                    if (window.showListifyToast) window.showListifyToast('İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                    else alert('İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.');
+                });
+        });
+    }
+});
+</script>
+{% endblock %}

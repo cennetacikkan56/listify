@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+    .verify-card .form-control { font-size: 1.25rem; letter-spacing: 0.35em; text-align: center; font-weight: 600; }
+    .verify-card .form-control::placeholder { letter-spacing: 0.2em; }
+</style>
+<div class="row justify-content-center mt-5">
+    <div class="col-11 col-sm-10 col-md-6 col-lg-5">
+        <div class="card shadow-sm auth-card verify-card">
+            <div class="card-header border-0">
+                <h5 class="mb-0 text-center"><i class="bi bi-shield-check me-2"></i>E-posta Doğrulama</h5>
+            </div>
+            <div class="card-body p-4">
+                {% if not code_sent %}
+                {# --- Asama 1: Sadece "Kod Gonder" butonu --- #}
+                <p class="text-center mb-3">Kod şu maile gönderilecek: <strong>{{ current_user.email or 'E-posta tanımlı değil (önce profil sayfasından ekleyin)' }}</strong></p>
+                <form method="POST" action="{{ url_for('resend_verification') }}">
+                    <button type="submit" class="btn btn-primary w-100">Kod Gönder</button>
+                </form>
+                {% if not current_user.email or not (current_user.email or '')|trim %}
+                <p class="mt-3 mb-0 text-center text-muted small"><a href="{{ url_for('profile') }}">Profil sayfasından e-posta ekleyin</a></p>
+                {% endif %}
+                {% else %}
+                {# --- Asama 2: 6 haneli kod giriş kutucukları --- #}
+                <p class="text-center mb-4">Kod <strong>{{ current_user.email or 'kayıtlı e-posta' }}</strong> adresine gönderildi.</p>
+                <p class="text-muted small text-center mb-4">E-posta adresinize gelen 6 haneli kodu aşağıya girin.</p>
+                <form method="POST" action="{{ url_for('verify_code') }}">
+                    <div class="mb-4">
+                        <label class="form-label visually-hidden">Doğrulama kodu</label>
+                        <input type="text" name="code" class="form-control" placeholder="000000" maxlength="6" minlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required autofocus>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Doğrula</button>
+                </form>
+                <p class="mt-4 mb-0 text-center text-muted small">Kod gelmediyse yeni kod gonderin.</p>
+                <form method="POST" action="{{ url_for('resend_verification') }}" class="text-center mt-2">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm">Kodu tekrar gonder</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

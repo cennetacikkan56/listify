@@ -1,0 +1,113 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+    .auth-card .form-control::placeholder { color: var(--listify-text-muted); }
+    .auth-card a { color: #0d6efd; font-weight: 500; }
+    [data-theme="dark"] .auth-card a { color: #58a6ff; }
+</style>
+<div class="row justify-content-center mt-5">
+    <div class="col-11 col-sm-10 col-md-6 col-lg-5">
+        <div class="card shadow-sm auth-card">
+            <div class="card-header border-0">
+                <h5 class="mb-0 text-center">Kayıt Ol</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" id="registerForm">
+                    <div class="mb-3">
+                        <label class="form-label">Ad-Soyad <span class="text-danger">*</span></label>
+                        <input type="text" name="full_name" id="full_name" class="form-control" placeholder="Örn: Ayşe Yılmaz" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hesap türü</label>
+                        <div class="d-flex gap-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role" id="role_teacher" value="teacher" checked>
+                                <label class="form-check-label" for="role_teacher">Eğitmen</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="role" id="role_student" value="student">
+                                <label class="form-check-label" for="role_student">Öğrenci</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3" id="studentNumberGroup" style="display: none;">
+                        <label class="form-label">Öğrenci numarası <span class="text-danger">*</span></label>
+                        <input type="text" name="student_number" id="student_number" class="form-control" placeholder="Örn: 123456">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kullanıcı adı</label>
+                        <input type="text" name="username" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E-posta <small class="text-muted">(Şifre sıfırlama için opsiyonel)</small></label>
+                        <input type="email" name="email" class="form-control" placeholder="ornek@eposta.com" value="{{ request.form.get('email', '') }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Şifre</label>
+                        <div class="password-wrap">
+                            <input type="password" name="password" id="regPassword" class="form-control" required minlength="4" autocomplete="new-password">
+                            <button type="button" class="password-toggle-btn" data-target="regPassword" aria-label="Şifreyi göster">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Şifre tekrar</label>
+                        <div class="password-wrap">
+                            <input type="password" name="password_confirm" id="regPasswordConfirm" class="form-control" required minlength="4" placeholder="Şifreyi tekrar girin" autocomplete="new-password">
+                            <button type="button" class="password-toggle-btn" data-target="regPasswordConfirm" aria-label="Şifreyi göster">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div id="passwordMismatch" class="invalid-feedback d-none">Şifreler eşleşmiyor.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100" id="regSubmitBtn">Kayıt Ol</button>
+                </form>
+                <p class="mt-4 mb-0 text-center text-muted small">
+                    Zaten hesabınız var mı? <a href="{{ url_for('login') }}" class="text-decoration-none" style="color:var(--listify-primary); font-weight:500;">Giriş yapın</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    var form = document.getElementById('registerForm');
+    var pass = document.getElementById('regPassword');
+    var confirm = document.getElementById('regPasswordConfirm');
+    var mismatch = document.getElementById('passwordMismatch');
+    if (form && pass && confirm) {
+        form.addEventListener('submit', function(e) {
+            if (pass.value !== confirm.value) {
+                e.preventDefault();
+                mismatch.classList.remove('d-none');
+                confirm.classList.add('is-invalid');
+                return false;
+            }
+        });
+        [pass, confirm].forEach(function(inp) {
+            inp.addEventListener('input', function() {
+                if (pass.value === confirm.value) {
+                    mismatch.classList.add('d-none');
+                    confirm.classList.remove('is-invalid');
+                }
+            });
+        });
+    }
+    var studentNumberGroup = document.getElementById('studentNumberGroup');
+    var studentNumber = document.getElementById('student_number');
+    var teacherRadio = document.getElementById('role_teacher');
+    var studentRadio = document.getElementById('role_student');
+    function toggleStudentField() {
+        var isStudent = studentRadio.checked;
+        studentNumberGroup.style.display = isStudent ? 'block' : 'none';
+        studentNumber.required = isStudent;
+        if (!isStudent) studentNumber.value = '';
+    }
+    teacherRadio.addEventListener('change', toggleStudentField);
+    studentRadio.addEventListener('change', toggleStudentField);
+    toggleStudentField();
+})();
+</script>
+{% endblock %}

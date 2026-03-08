@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Yeni Ödev Ekle — {{ target_list.title }}</h5>
+                <a href="{{ url_for('list_detail', list_id=target_list.id) }}" class="btn btn-sm btn-outline-secondary btn-touch">Listeye Dön</a>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_assignment', list_id=target_list.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Ödev Başlığı <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control" placeholder="Örn: Hafta 1 Ödevi" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Açıklama <span class="text-muted">(opsiyonel)</span></label>
+                        <textarea name="description" class="form-control" rows="4" placeholder="Ödev talimatları..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label" style="color:var(--listify-text);">Son Teslim Süresi <span class="text-muted">(opsiyonel)</span></label>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <select name="due_unit" class="form-select" style="max-width:140px;">
+                                <option value="">Seçin</option>
+                                <option value="dakika">Dakika</option>
+                                <option value="saat">Saat</option>
+                                <option value="gun">Gün</option>
+                                <option value="hafta">Hafta</option>
+                                <option value="ay">Ay</option>
+                            </select>
+                            <input type="number" name="due_amount" class="form-control" min="1" step="1" placeholder="Miktar" style="max-width:100px;">
+                        </div>
+                        <small class="text-muted">Şu andan itibaren. Türkiye saati (UTC+3).</small>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary btn-touch">Ödev Ekle</button>
+                        <a href="{{ url_for('list_detail', list_id=target_list.id) }}" class="btn btn-outline-secondary btn-touch">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

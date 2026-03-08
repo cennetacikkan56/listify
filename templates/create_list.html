@@ -1,0 +1,70 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+    .create-date-label { color: var(--listify-text); font-weight: 500; }
+    .create-date-input {
+        border-radius: var(--listify-radius);
+        border-color: var(--listify-border);
+        padding: 0.55rem 0.75rem;
+        color: var(--listify-text);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .create-date-input:focus {
+        border-color: var(--listify-primary);
+        box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+        outline: none;
+    }
+    .create-info-note {
+        font-size: 0.875rem;
+        color: var(--listify-text-muted);
+        font-weight: 400;
+        margin-top: 0.5rem;
+        padding: 0.6rem 0.75rem;
+        background: rgba(15, 23, 42, 0.03);
+        border-radius: 8px;
+        border-left: 3px solid var(--listify-accent);
+    }
+</style>
+<div class="row justify-content-center mt-5">
+    <div class="col-11 col-sm-10 col-md-8 col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header border-0">
+                <h5 class="mb-0">Yeni Liste Oluştur</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label create-date-label">Liste Başlığı</label>
+                        <input type="text" name="title" class="form-control" placeholder="Örn: 2026 Bitirme Projeleri" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label create-date-label">Açıklama / Detay <span class="text-muted">(opsiyonel)</span></label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Liste hakkında kısa açıklama veya not..."></textarea>
+                        <small class="text-muted">Bu metin liste detayında ve PDF çıktısında görünür.</small>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label create-date-label">Liste kapanış süresi <span class="text-muted">(opsiyonel)</span></label>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <select name="expires_unit" class="form-select create-date-input" style="max-width:140px;">
+                                <option value="">Seçin</option>
+                                <option value="dakika">Dakika</option>
+                                <option value="saat">Saat</option>
+                                <option value="gun">Gün</option>
+                                <option value="hafta">Hafta</option>
+                                <option value="ay">Ay</option>
+                            </select>
+                            <input type="number" name="expires_amount" class="form-control create-date-input" min="1" step="1" placeholder="Miktar" style="max-width:100px;">
+                        </div>
+                        <p class="create-info-note mb-0 mt-2">
+                            <i class="bi bi-info-circle me-2" style="color:var(--listify-accent);"></i>
+                            Örn: 2 Hafta = şu andan itibaren 2 hafta. Boş bırakırsanız liste süresiz açık kalır. Saatler Türkiye (Europe/Istanbul) ile senkron.
+                        </p>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 btn-touch">Listeyi ve Kodu Oluştur</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1260 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+    @media print {
+        .no-print, .d-print-none { display: none !important; }
+        .d-print-block { display: block !important; }
+        .listify-container { max-width: 100% !important; padding: 0 !important; }
+        .card { box-shadow: none !important; border: 1px solid #333 !important; }
+        .table-responsive { overflow: visible !important; }
+        .print-table { width: 100% !important; }
+        table.print-table th, table.print-table td { padding: 6px 8px; font-size: 10pt; }
+    }
+    .report-title { color: var(--listify-heading); font-weight: 700; }
+    .report-desc { color: var(--listify-text-muted); font-weight: 400; font-size: 0.95rem; margin-top: 0.25rem; }
+    .countdown-box {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.5rem 1rem; background: #1e40af; color: #fff;
+        border-radius: var(--listify-radius); font-weight: 600; font-variant-numeric: tabular-nums;
+        transition: background 0.3s ease;
+    }
+    .countdown-box.expired { background: #dc2626; color: #fff; }
+    #degerlendirModal .feedback-input { font-size: 1rem; min-height: 100px; }
+    @media (max-width: 767.98px) {
+        .analiz-kartlari { flex-direction: column; }
+        #degerlendirModal .modal-body { padding: 1rem 0.75rem; }
+        #degerlendirModal .feedback-input { min-height: 80px; font-size: 16px; }
+    }
+    .report-title { margin-bottom: 0.25rem; }
+    .report-desc { margin-top: 0.35rem; }
+    /* Analiz kartları: beyaz arka plan, gölge, belirgin ikonlar */
+    .analiz-kart-1, .analiz-kart-2, .analiz-kart-3 {
+        background: #ffffff !important;
+        border: 1px solid rgba(0,0,0,0.06) !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+        transition: box-shadow 0.2s ease;
+    }
+    [data-theme="dark"] .analiz-kart-1, [data-theme="dark"] .analiz-kart-2, [data-theme="dark"] .analiz-kart-3 {
+        background: var(--listify-card-bg) !important;
+        border-color: var(--listify-border) !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.2) !important;
+    }
+    .analiz-kart-1 .rounded-circle { background: #1e40af !important; color: #fff !important; }
+    .analiz-kart-2 .rounded-circle { background: #059669 !important; color: #fff !important; }
+    .analiz-kart-3 .rounded-circle { background: #d97706 !important; color: #fff !important; }
+    .analiz-kart .card-body { display: flex; align-items: center; gap: 0.65rem; padding: 0.75rem 1rem; }
+    .analiz-kart .rounded-circle { flex-shrink: 0; padding: 0.5rem !important; }
+    .analiz-kart .rounded-circle i { font-size: 1.1rem !important; }
+    .analiz-kart p, .analiz-kart .fw-bold { color: #1e293b !important; }
+    .analiz-kart .text-muted { color: #64748b !important; }
+    [data-theme="dark"] .analiz-kart p, [data-theme="dark"] .analiz-kart .fw-bold { color: var(--listify-text) !important; }
+    [data-theme="dark"] .analiz-kart .text-muted { color: var(--listify-text-muted) !important; }
+    .list-detail-actions { display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; }
+    .list-detail-actions .btn { text-align: left; justify-content: flex-start; font-weight: 600; }
+    .list-detail-actions .btn i { opacity: 0.95; }
+    .mt-4.no-print.mb-4 { margin-bottom: 1rem !important; }
+    .check-col { width: 44px; opacity: 0; max-width: 0; overflow: hidden; padding: 0 !important; transition: opacity 0.3s ease, max-width 0.3s ease; }
+    .table-wrapper.selection-mode .check-col { opacity: 1; max-width: 44px; padding: 0.5rem 0.75rem !important; }
+    .check-row-mobile { display: none !important; transition: opacity 0.3s ease; }
+    #studentsMobileCards.selection-mode .check-row-mobile { display: flex !important; opacity: 1; }
+    /* Liste detay: 3 nokta menü görünür ve üstte kalsın */
+    #bulkActionsDropdown { position: relative; z-index: 100; }
+    .listify-dropdown-menu { z-index: 1050 !important; }
+    /* Toplu işlem çubuğu */
+    #bulkActionBar {
+        position: sticky;
+        top: 0;
+        z-index: 1020;
+        background: #ffffff !important;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+    [data-theme="dark"] #bulkActionBar {
+        background: var(--listify-card-bg, #25282d) !important;
+    }
+    /* Mobil tablo: overflow-x ile ekran patlamasını engelle */
+    #studentsTableWrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    /* Mobil: toplu işlem barı alta sabit, tüm genişlik */
+    @media (max-width: 767.98px) {
+        body:has(.table-wrapper.selection-mode),
+        body:has(#studentsMobileCards.selection-mode) { padding-bottom: 5rem; }
+        #bulkActionBar {
+            position: fixed !important;
+            top: auto !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+        }
+        #bulkActionBar .d-flex { justify-content: center; flex-wrap: wrap; gap: 0.5rem; }
+    }
+    /* Mobil: tablo ve modal padding */
+    @media (max-width: 575.98px) {
+        .dropdown-menu-end { right: 0; left: auto; max-width: 100vw; z-index: 1050; }
+        #bulkActionBar .btn { flex: 1 1 auto; min-width: 0; min-height: 44px !important; }
+        .table td, .table th { padding: 0.5rem 0.4rem; font-size: 0.875rem; }
+        .modal-body { padding: 1rem 0.75rem !important; font-size: 0.9375rem; }
+        .modal .form-control { font-size: 16px !important; }
+    }
+</style>
+
+<div class="mt-4">
+    <h2 class="mb-3 no-print">Liste Detayı</h2>
+    <!-- Sol: Doughnut | Orta: 3 kart | Sağ: İşlem butonları -->
+    <div class="row g-3 mb-3 no-print align-items-stretch">
+        <div class="col-12 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-3">Durum Özeti</h6>
+                    <div class="d-flex justify-content-center align-items-center" style="min-height: 220px;">
+                        <canvas id="listStatusChart"></canvas>
+                        <p id="listStatusChartEmpty" class="text-muted small mb-0 d-none">Henüz veri yok</p>
+                    </div>
+                    <div class="mt-2 small text-muted text-center">Onaylandı / Bekliyor / Reddedildi / Teslim Etmedi</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="d-flex flex-column gap-2 h-100" style="min-height: 280px;">
+                <div class="card flex-grow-1 analiz-kart analiz-kart-1">
+                    <div class="card-body">
+                        <div class="rounded-circle p-2">
+                            <i class="bi bi-people-fill fs-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0" style="font-weight:500;">Kayıtlı Öğrenci</p>
+                            <p class="fw-bold mb-0 fs-4" id="statListTotalStudents">{{ list_total_students or 0 }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card flex-grow-1 analiz-kart analiz-kart-2">
+                    <div class="card-body">
+                        <div class="rounded-circle p-2">
+                            <i class="bi bi-file-earmark-check fs-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0" style="font-weight:500;">Tamamlanan Teslimatlar</p>
+                            <p class="fw-bold mb-0 fs-4">{{ list_completed_submissions or 0 }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card flex-grow-1 analiz-kart analiz-kart-3">
+                    <div class="card-body">
+                        <div class="rounded-circle p-2">
+                            <i class="bi bi-hourglass-split fs-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small mb-0" style="font-weight:500;">Bekleyen Onaylar</p>
+                            <p class="fw-bold mb-0 fs-4" id="statListPendingApprovals">{{ list_pending_approvals or 0 }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title fw-bold mb-2">İşlemler</h6>
+                    <div class="list-detail-actions">
+                        {% if not target_list.is_completed and not target_list.expires_at %}
+                        <button type="button" class="btn btn-outline-primary btn-touch w-100" data-bs-toggle="modal" data-bs-target="#addDeadlineModal">
+                            <i class="bi bi-clock me-1"></i>Süre Ekle
+                        </button>
+                        {% endif %}
+                        {% if not target_list.is_completed %}
+                        <form action="/complete-list/{{ target_list.id }}" method="POST" class="d-block">
+                            <button type="submit" class="btn btn-outline-success btn-touch w-100"><i class="bi bi-check-circle me-1"></i>Tamamlandı</button>
+                        </form>
+                        {% else %}
+                        <form action="/uncomplete-list/{{ target_list.id }}" method="POST" class="d-block">
+                            <button type="submit" class="btn btn-outline-warning btn-touch w-100"><i class="bi bi-x-circle me-1"></i>Tamamlandıyı Kaldır</button>
+                        </form>
+                        <button type="button" class="btn btn-outline-secondary btn-touch w-100" data-bs-toggle="modal" data-bs-target="#extendModal">
+                            <i class="bi bi-clock-history me-1"></i>Süreyi Uzat
+                        </button>
+                        {% endif %}
+                        <a href="{{ url_for('download_pdf', list_id=target_list.id) }}" target="_blank" class="btn btn-primary btn-touch w-100"><i class="bi bi-file-pdf me-1"></i>PDF Görüntüle</a>
+                        <button onclick="window.print()" class="btn btn-outline-secondary btn-touch w-100"><i class="bi bi-printer me-1"></i>Yazdır</button>
+                        <a href="/dashboard" class="btn btn-outline-secondary btn-touch w-100"><i class="bi bi-arrow-left me-1"></i>Geri Dön</a>
+                        <button type="button" class="btn btn-outline-danger btn-touch w-100" data-bs-toggle="modal" data-bs-target="#silinenOgrencilerModal" title="Silinen öğrencileri görüntüle ve geri yükle">
+                            <i class="bi bi-trash me-1"></i>Çöp Kutusu (<span class="silinen-count-num">{{ deleted_students|length if deleted_students else 0 }}</span>)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="report-header mb-3">
+        <div class="d-flex flex-wrap align-items-center gap-3 mb-2">
+            <h1 class="report-title mb-0">{{ target_list.title }}</h1>
+            <div class="no-print d-flex align-items-center gap-2" id="sureYonetimiWrap">
+                {% if not target_list.is_completed and target_list.expires_at %}
+                <div id="countdown-box" class="countdown-box" data-expires="{{ target_list.expires_at|istanbul_iso }}">
+                    <i class="bi bi-clock"></i><span id="countdown-text">--:--:--</span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger d-none" id="btnSureyiUzatHeader" data-bs-toggle="modal" data-bs-target="#extendModal" title="Süreyi Uzat">
+                    <i class="bi bi-clock-history me-1"></i>Süreyi Uzat
+                </button>
+                {% elif target_list.is_completed %}
+                <span class="badge-status-approved">Tamamlandı</span>
+                {% endif %}
+            </div>
+        </div>
+        {% if target_list.description %}<p class="report-desc">{{ target_list.description }}</p>{% endif %}
+        <div class="no-print mt-3 d-flex flex-wrap gap-2 align-items-center">
+            <span class="badge" style="background: var(--listify-table-stripe); color: var(--listify-text); border: 1px solid var(--listify-border); font-weight:600;">Paylaşım: {{ target_list.unique_code }}</span>
+        </div>
+        <hr class="mt-4">
+    </div>
+
+    <!-- Süre Ekle modalı (expires_at yokken) -->
+    <div class="modal fade" id="addDeadlineModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content modal-glass">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-clock me-2"></i>Süre Ekle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ url_for('extend_list', list_id=target_list.id) }}" method="POST">
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">Liste kapanış süresini şu andan itibaren belirleyin. Türkiye saati (UTC+3).</p>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <select name="duration_unit" class="form-select" style="max-width:140px;">
+                                <option value="dakika">Dakika</option>
+                                <option value="saat" selected>Saat</option>
+                                <option value="gun">Gün</option>
+                                <option value="hafta">Hafta</option>
+                                <option value="ay">Ay</option>
+                            </select>
+                            <input type="number" name="duration_value" class="form-control" min="1" step="1" placeholder="Miktar" style="max-width:100px;" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="no-print mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title fw-bold mb-2">Liste Duyurusu</h6>
+                <form action="{{ url_for('save_announcement', list_id=target_list.id) }}" method="POST">
+                    <textarea name="announcement" class="form-control mb-2" rows="2" placeholder="Öğrencilere iletmek istediğiniz genel duyuruyu buraya yazın...">{{ target_list.announcement or '' }}</textarea>
+                    <button type="submit" class="btn btn-sm btn-primary btn-touch">Duyuruyu Kaydet</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if target_list.students %}
+    <div class="no-print mb-3">
+        <span class="badge" style="background: var(--listify-table-stripe); color: var(--listify-text); border: 1px solid var(--listify-border);">Ödev teslim: {{ submitted_count }} / {{ list_total_students or 0 }}</span>
+        {% if filter_pending %}<span class="badge bg-warning text-dark ms-1">Sadece Bekleyenler</span> <a href="{{ url_for('list_detail', list_id=target_list.id) }}" class="small ms-1">Tümünü göster</a>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Öğrenciler: Temiz tablo + İncele modal + Toplu işlemler -->
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3 position-relative" style="overflow: visible;">
+        <h4 class="mb-0">Kayıtlı Öğrenciler</h4>
+        <button type="button" class="btn btn-outline-secondary btn-sm no-print" id="btnSilinenOgrenciler" data-bs-toggle="modal" data-bs-target="#silinenOgrencilerModal" title="Silinen öğrenciler" style="{% if not deleted_students or deleted_students|length == 0 %}display:none;{% endif %}">
+            <i class="bi bi-trash me-1"></i>Silinen Öğrenciler (<span class="silinen-count-num">{{ deleted_students|length if deleted_students else 0 }}</span>)
+        </button>
+        {% if students_display %}
+        <div class="dropdown no-print" style="position: relative; z-index: 100;">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle dropdown-toggle-listify" type="button" id="bulkActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Toplu işlemler">
+                <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end listify-dropdown-menu" aria-labelledby="bulkActionsDropdown">
+                <li><a href="#" class="dropdown-item" id="btnSecimModu"><i class="bi bi-check2-square me-2"></i>Seç</a></li>
+                <li><a href="#" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#silinenOgrencilerModal"><i class="bi bi-trash me-2"></i>Silinen Öğrenciler</a></li>
+                {% if list_pending_approvals is defined and list_pending_approvals > 0 %}
+                <li>
+                    <form action="{{ url_for('bulk_approve_submissions', list_id=target_list.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bu listedeki tüm bekleyen öğrencileri onaylamak istediğinize emin misiniz?');">
+                        <button type="submit" class="dropdown-item"><i class="bi bi-check-all me-2"></i>Tümünü Onayla</button>
+                    </form>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+    <!-- Seçim modu işlem barı -->
+    <div id="bulkActionBar" class="no-print mb-3 p-3 rounded border" style="display:none; background: var(--listify-card-bg); border-color: var(--listify-border) !important;">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="fw-medium me-2" id="bulkActionCount">0 adet seçildi</span>
+            <button type="button" class="btn btn-success btn-sm" id="btnSecilenleriOnayla"><i class="bi bi-check-circle me-1"></i>Onayla</button>
+            <button type="button" class="btn btn-danger btn-sm" id="btnSecilenleriSil"><i class="bi bi-trash me-1"></i>Çöpe At</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnSecimModuKapat">İptal</button>
+        </div>
+    </div>
+    {% if target_list.students %}
+    <div class="d-none d-print-block mb-4">
+        <table class="table table-bordered print-table">
+            <thead>
+                <tr>
+                    <th>Ad Soyad</th>
+                    <th>Öğrenci No</th>
+                    <th>Proje Başlığı</th>
+                    <th>Teslim Durumu</th>
+                    <th>Not</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in students_display %}
+                {% set ns_p = namespace(teslim='Teslim Edilmedi', not_val=' - ') %}
+                {% if s.user_id and target_list.assignments %}
+                    {% for a in target_list.assignments %}
+                        {% for sub in a.submissions %}
+                            {% if sub.user_id == s.user_id and sub.file_path %}
+                                {% set ns_p.teslim = 'Teslim Edildi' %}
+                                {% if sub.grade %}{% set ns_p.not_val = sub.grade|string %}{% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+                <tr>
+                    <td>{{ s.display_name or '—' }}</td>
+                    <td>{{ s.display_student_no or '—' }}</td>
+                    <td>{{ s.project_title or '—' }}</td>
+                    <td>{{ ns_p.teslim }}</td>
+                    <td>{{ ns_p.not_val }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card mb-5 d-print-none d-none d-md-block" id="studentsTableCard" data-list-id="{{ target_list.id }}">
+        <div class="table-responsive table-wrapper" id="studentsTableWrapper">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="check-col no-print"><input type="checkbox" class="form-check-input" id="selectAllCheck" title="Tümünü seç"></th>
+                        <th>Ad Soyad</th>
+                        <th>Öğrenci No</th>
+                        <th>Proje Başlığı</th>
+                        <th>Onay</th>
+                        <th>Ödev / Teslim</th>
+                        <th class="text-end no-print">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students_display %}
+                    <tr data-record-id="{{ s.id }}" data-display-name="{{ (s.display_name or '—')|e }}" data-display-student-no="{{ (s.display_student_no or '—')|e }}" data-status="{{ s.status or 'pending' }}" data-project-title="{{ (s.project_title or '')|e }}">
+                        <td class="check-col no-print"><input type="checkbox" class="form-check-input row-check" value="{{ s.id }}" data-status="{{ s.status }}"></td>
+                        <td class="fw-medium">{{ s.display_name }}</td>
+                        <td>{{ s.display_student_no }}</td>
+                        <td>{{ s.project_title or '—' }}</td>
+                        <td>
+                            {% if s.status == 'approved' %}<span class="badge-status-approved">Onaylandı</span>
+                            {% elif s.status == 'rejected' %}<span class="badge-status-rejected">Reddedildi</span>
+                            {% else %}<span class="badge-status-pending">Beklemede</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if target_list.assignments %}
+                                {% for a in target_list.assignments %}
+                                    {% set ns_sub = namespace(found=none) %}
+                                    {% if s.user_id %}
+                                    {% for sub in a.submissions %}
+                                        {% if sub.user_id == s.user_id and sub.file_path %}
+                                            {% set ns_sub.found = sub %}
+                                        {% endif %}
+                                    {% endfor %}
+                                    {% endif %}
+                                    {% if ns_sub.found %}
+                                    <div class="d-flex align-items-center gap-1 mb-1 flex-wrap">
+                                        <span class="badge-status-approved">Teslim Edildi</span>
+                                    </div>
+                                    {% else %}
+                                    <div class="mb-1">
+                                        <span class="badge bg-secondary">Teslim Edilmedi</span>
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end no-print">
+                            {% set ns_first = namespace(a=none, sub=none) %}
+                            {% if s.user_id and target_list.assignments %}
+                                {% for a in target_list.assignments %}
+                                    {% for sub in a.submissions %}
+                                        {% if sub.user_id == s.user_id and sub.file_path and not ns_first.sub %}
+                                            {% set ns_first.a = a %}
+                                            {% set ns_first.sub = sub %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+                            {% if ns_first.sub %}
+                            <a href="{{ url_for('view_file', list_id=target_list.id, assignment_id=ns_first.a.id, submission_id=ns_first.sub.id) }}" class="btn btn-sm btn-outline-primary btn-touch" target="_blank" rel="noopener"><i class="bi bi-eye me-1"></i>İncele</a>
+                            {% else %}
+                            <span class="btn btn-sm btn-outline-secondary btn-touch disabled" title="Dosya yok"><i class="bi bi-eye me-1"></i>İncele</span>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary ms-1 btn-degerlendir btn-touch"
+                                data-record-id="{{ s.id }}"
+                                data-student-name="{{ s.display_name }}"
+                                data-project-title="{{ s.project_title or '—' }}"
+                                data-feedback="{{ (s.teacher_feedback or '')|e }}"
+                                data-submission-id="{{ ns_first.sub.id if ns_first.sub else '' }}"
+                                data-assignment-id="{{ ns_first.a.id if ns_first.a else '' }}"
+                                data-grade="{{ (ns_first.sub.grade or '') if ns_first.sub else '' }}">Değerlendir</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary btn-duzenle btn-touch"
+                                data-record-id="{{ s.id }}"
+                                data-display-name="{{ s.display_name }}"
+                                data-has-user="{{ '1' if s.user_id and s.user else '0' }}"
+                                data-name="{{ s.name_surname or '' }}"
+                                data-student-no="{{ s.student_no or '' }}"
+                                data-display-student-no="{{ s.display_student_no or '' }}"
+                                data-project-title="{{ (s.project_title or '')|e }}"
+                                data-summary="{{ (s.summary or '')|e }}"
+                                data-teacher-feedback="{{ (s.teacher_feedback or '')|e }}">Düzenle</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="d-md-none no-print" id="studentsMobileCards">
+                    {% for s in students_display %}
+        {% set ns_first = namespace(a=none, sub=none) %}
+        {% if s.user_id and target_list.assignments %}
+            {% for a in target_list.assignments %}
+                {% for sub in a.submissions %}
+                    {% if sub.user_id == s.user_id and sub.file_path and not ns_first.sub %}
+                        {% set ns_first.a = a %}
+                        {% set ns_first.sub = sub %}
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        {% endif %}
+        <div class="card mb-3 student-card-mobile" data-record-id="{{ s.id }}" data-display-name="{{ (s.display_name or '—')|e }}" data-display-student-no="{{ (s.display_student_no or '—')|e }}" data-status="{{ s.status or 'pending' }}" data-project-title="{{ (s.project_title or '')|e }}">
+            <div class="card-body">
+                <div class="check-row-mobile mb-2">
+                    <input type="checkbox" class="form-check-input row-check-mobile mt-1" value="{{ s.id }}" data-status="{{ s.status }}">
+                </div>
+                </div>
+                <p class="fw-medium mb-1">{{ s.display_name }}</p>
+                <p class="text-muted small mb-1">No: {{ s.display_student_no }}</p>
+                <p class="small mb-2">{{ s.project_title or '—' }}</p>
+                <p class="mb-2">
+                    {% if s.status == 'approved' %}<span class="badge-status-approved">Onaylandı</span>
+                    {% elif s.status == 'rejected' %}<span class="badge-status-rejected">Reddedildi</span>
+                    {% else %}<span class="badge-status-pending">Beklemede</span>{% endif %}
+                    {% if target_list.assignments %}
+                        {% set ns_teslim = namespace(done=false) %}
+                        {% for a in target_list.assignments %}
+                            {% for sub in a.submissions %}
+                                {% if sub.user_id == s.user_id and sub.file_path %}{% set ns_teslim.done = true %}{% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                        {% if ns_teslim.done %}<span class="badge-status-approved ms-1">Teslim Edildi</span>{% else %}<span class="badge bg-secondary ms-1">Teslim Edilmedi</span>{% endif %}
+                    {% endif %}
+                </p>
+                <div class="d-flex gap-2 mt-2 flex-wrap">
+                    {% if ns_first.sub %}
+                    <a href="{{ url_for('view_file', list_id=target_list.id, assignment_id=ns_first.a.id, submission_id=ns_first.sub.id) }}" class="btn btn-sm btn-outline-primary btn-touch" target="_blank" rel="noopener"><i class="bi bi-eye me-1"></i>İncele</a>
+                    {% else %}
+                    <span class="btn btn-sm btn-outline-secondary btn-touch disabled" title="Dosya yok"><i class="bi bi-eye me-1"></i>İncele</span>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-degerlendir btn-touch"
+                        data-record-id="{{ s.id }}"
+                        data-student-name="{{ s.display_name }}"
+                        data-project-title="{{ s.project_title or '—' }}"
+                        data-feedback="{{ (s.teacher_feedback or '')|e }}"
+                        data-submission-id="{{ ns_first.sub.id if ns_first.sub else '' }}"
+                        data-assignment-id="{{ ns_first.a.id if ns_first.a else '' }}"
+                        data-grade="{{ (ns_first.sub.grade or '') if ns_first.sub else '' }}">Değerlendir</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-duzenle btn-touch"
+                        data-record-id="{{ s.id }}"
+                        data-display-name="{{ s.display_name }}"
+                        data-has-user="{{ '1' if s.user_id and s.user else '0' }}"
+                        data-name="{{ s.name_surname or '' }}"
+                        data-student-no="{{ s.student_no or '' }}"
+                        data-display-student-no="{{ s.display_student_no or '' }}"
+                        data-project-title="{{ (s.project_title or '')|e }}"
+                        data-summary="{{ (s.summary or '')|e }}"
+                        data-teacher-feedback="{{ (s.teacher_feedback or '')|e }}">Düzenle</button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card mb-5">
+        <div class="card-body empty-state">
+            <i class="bi bi-people empty-state-icon d-block"></i>
+            <span class="empty-state-text mb-0">{% if filter_pending %}Bu listede bekleyen öğrenci yok.{% else %}Henüz kayıtlı öğrenci yok.{% endif %}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ödev: Sadece ekleme/silme (revizyon/not İncele modalından) -->
+    <div class="no-print mt-5">
+        {% if not target_list.assignments or target_list.assignments|length == 0 %}
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <a href="{{ url_for('add_assignment', list_id=target_list.id) }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Ödev Ekle</a>
+            <span class="text-muted small">Revizyon, not ve geri bildirim her öğrenci satırındaki İncele butonundan yapılır.</span>
+        </div>
+        {% else %}
+        {% for a in target_list.assignments %}
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 py-2 mb-2" style="border-bottom: 1px solid var(--listify-border);">
+            <span class="fw-medium">{{ a.title }}{% if a.due_date %} <span class="text-muted small">({{ a.due_date.strftime('%d.%m.%Y %H:%M') }})</span>{% endif %}</span>
+            <form action="{{ url_for('delete_assignment', list_id=target_list.id, assignment_id=a.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Bu ödevi silmek istediğinize emin misiniz?');">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Ödevi Sil</button>
+            </form>
+        </div>
+        {% endfor %}
+        <p class="text-muted small mt-2 mb-0">Değerlendirme her öğrenci satırındaki Değerlendir butonundan yapılır.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Değerlendir modalı: Dosya önizleme + Geri bildirim + Not + Onayla / Reddet -->
+<div class="modal fade" id="degerlendirModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="true" data-bs-keyboard="true" data-list-id="{{ target_list.id }}">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
+        <div class="modal-content modal-glass">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="degerlendirModalTitle">Değerlendir</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body px-3 px-md-4 py-3">
+                <p class="small mb-3" style="color:var(--listify-text-muted);"><strong id="degerlendirStudentName" style="color:var(--listify-heading);">—</strong> — <span id="degerlendirProjectTitle">—</span></p>
+                <div id="degerlendirPreviewWrap" class="mb-3" style="display:none;">
+                    <label class="form-label fw-medium">Yüklenen Dosya Önizleme</label>
+                    <div class="border rounded overflow-hidden bg-light" style="min-height:200px; max-height:50vh;">
+                        <iframe id="degerlendirPreviewFrame" src="" style="width:100%; height:45vh; border:none;"></iframe>
+                    </div>
+                    <small class="text-muted">PDF, resim ve metin dosyaları tarayıcıda görüntülenir. Diğerleri için indirme gerekebilir.</small>
+                </div>
+                <form id="degerlendirForm">
+                    <input type="hidden" name="record_id" id="degerlendirRecordId" value="">
+                    <input type="hidden" name="submission_id" id="degerlendirSubmissionId" value="">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Not</label>
+                            <input type="text" name="grade" id="degerlendirGrade" class="form-control" placeholder="Örn: 95, AA">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-medium">Geri Bildirim</label>
+                        <textarea name="teacher_feedback" id="degerlendirFeedback" class="form-control feedback-input" rows="3" placeholder="Öğrenciye yönelik geri bildirim (Red için zorunlu)..." style="min-height:80px;"></textarea>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <button type="button" id="degerlendirApproveBtn" class="btn btn-success btn-touch"><i class="bi bi-check-lg me-1"></i>Onayla</button>
+                        <button type="button" id="degerlendirRejectBtn" class="btn btn-outline-danger btn-touch"><i class="bi bi-x-lg me-1"></i>Reddet</button>
+                        <button type="button" class="btn btn-outline-secondary btn-touch" data-bs-dismiss="modal">İptal</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Silinen Öğrenciler modalı -->
+<div class="modal fade" id="silinenOgrencilerModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content modal-glass">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold">Silinen Öğrenciler</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted mb-3" id="silinenOgrencilerIntro">Bu listeden silinen öğrenciler. Geri yükleyerek tekrar listeye ekleyebilirsiniz.</p>
+                <div class="table-responsive" id="silinenOgrencilerTableWrap">
+                    <table class="table table-sm table-hover">
+                        <thead><tr><th>Ad Soyad</th><th>Öğrenci No</th><th class="text-end">İşlem</th></tr></thead>
+                        <tbody id="silinenOgrencilerTbody">
+                        {% for s in deleted_students or [] %}
+                        <tr data-deleted-record-id="{{ s.id }}">
+                            <td>{{ s.display_name or '—' }}</td>
+                            <td>{{ s.display_student_no or '—' }}</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-success btn-restore-deleted" data-record-id="{{ s.id }}" data-display-name="{{ (s.display_name or '—')|e }}" data-display-student-no="{{ (s.display_student_no or '—')|e }}" data-status="{{ s.status or 'pending' }}" data-project-title="{{ (s.project_title or '')|e }}" data-list-id="{{ target_list.id }}"><i class="bi bi-arrow-counterclockwise me-1"></i>Geri Yükle</button>
+                                <button type="button" class="btn btn-sm btn-danger btn-permanent-delete-student ms-1" data-record-id="{{ s.id }}" data-list-id="{{ target_list.id }}"><i class="bi bi-trash-fill me-1"></i>Kalıcı Sil</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <p class="text-muted mb-0" id="silinenOgrencilerEmpty" style="{% if deleted_students and deleted_students|length > 0 %}display:none;{% endif %}">Silinen öğrenci yok.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toplu silme onay modalı -->
+<div class="modal fade" id="bulkDeleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-glass">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold">Seçilenleri Sil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0"><span id="bulkDeleteCount">0</span> öğrenci kaydı çöpe taşınacak. Silinen Öğrenciler listesinden geri yükleyebilirsiniz. Devam etmek istiyor musunuz?</p>
+            </div>
+            <div class="modal-footer border-top">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-danger" id="bulkDeleteConfirmBtn"><i class="bi bi-trash me-1"></i>Sil</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Süreyi Uzat modalı -->
+<div class="modal fade" id="extendModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-glass">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold">Süreyi Uzat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('extend_list', list_id=target_list.id) }}" method="POST">
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Liste kapanış süresini şu andan itibaren ekleyin. Türkiye saati (UTC+3).</p>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <select name="duration_unit" class="form-select" style="max-width:140px;">
+                            <option value="dakika">Dakika</option>
+                            <option value="saat" selected>Saat</option>
+                            <option value="gun">Gün</option>
+                            <option value="hafta">Hafta</option>
+                            <option value="ay">Ay</option>
+                        </select>
+                        <input type="number" name="duration_value" class="form-control" min="1" step="1" placeholder="Miktar" style="max-width:100px;" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Uzat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Tek paylaşımlı Düzenle modalı -->
+<div class="modal fade" id="editModalShared" tabindex="-1" aria-labelledby="editModalLabelShared">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+        <div class="modal-content modal-glass">
+            <form id="editFormShared" action="#" method="POST">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="editModalLabelShared">Öğrenci Düzenle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="editReadonlyFields" class="mb-3" style="display:none;">
+                        <div class="mb-3">
+                            <label class="form-label">Ad Soyad</label>
+                            <input type="text" class="form-control" id="editDisplayName" readonly>
+                            <small class="text-muted">Profil sayfasından güncellenir.</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Öğrenci No</label>
+                            <input type="text" class="form-control" id="editDisplayStudentNo" readonly>
+                        </div>
+                    </div>
+                    <div id="editEditableFields" class="mb-3" style="display:none;">
+                        <div class="mb-3">
+                            <label class="form-label">Ad Soyad</label>
+                            <input type="text" name="name" id="editName" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Öğrenci No</label>
+                            <input type="number" name="student_no" id="editStudentNo" class="form-control" min="1" step="1" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Proje Başlığı</label>
+                        <input type="text" name="project_title" id="editProjectTitle" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Özet</label>
+                        <textarea name="summary" id="editSummary" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label">Hoca Yorumu / Geri Bildirim</label>
+                        <textarea name="teacher_feedback" id="editTeacherFeedback" class="form-control feedback-input" rows="3" placeholder="Öğrenci için yorum veya geri bildirim..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+(function() {
+    var approved = {{ list_status_approved|default(0) }};
+    var pending = {{ list_status_pending|default(0) }};
+    var rejected = {{ list_status_rejected|default(0) }};
+    var notSubmitted = {{ list_status_not_submitted|default(0) }};
+    var total = approved + pending + rejected + notSubmitted;
+    var ctx = document.getElementById('listStatusChart');
+    if (ctx && typeof Chart !== 'undefined') {
+        if (total === 0) {
+            var empty = document.getElementById('listStatusChartEmpty');
+            if (empty) { empty.classList.remove('d-none'); ctx.style.display = 'none'; }
+        } else {
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Onaylandı', 'Bekliyor', 'Reddedildi', 'Teslim Etmedi'],
+                datasets: [{
+                    data: [approved, pending, rejected, notSubmitted],
+                    backgroundColor: ['#10b981', '#f59e0b', '#f43f5e', '#94a3b8'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+        }
+    }
+})();
+</script>
+<script>
+(function() {
+    var countdownBox = document.getElementById('countdown-box');
+    var extendBtn = document.getElementById('btnSureyiUzatHeader');
+    if (countdownBox && extendBtn) {
+        function checkExpired() {
+            if (countdownBox.classList.contains('expired')) {
+                extendBtn.classList.remove('d-none');
+            }
+        }
+        checkExpired();
+        setInterval(checkExpired, 1000);
+    }
+})();
+</script>
+<script>
+(function() {
+    document.body.addEventListener('click', function(e) {
+        var btn = e.target.closest('.btn-duzenle');
+        if (!btn) return;
+        e.preventDefault();
+        var recordId = btn.dataset.recordId || '';
+        var displayName = btn.dataset.displayName || '—';
+        var hasUser = btn.dataset.hasUser === '1';
+            var name = (btn.dataset.name || '').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&amp;/g,'&');
+            var studentNo = btn.dataset.studentNo || '';
+            var displayStudentNo = (btn.dataset.displayStudentNo || '').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&amp;/g,'&');
+            var projectTitle = (btn.dataset.projectTitle || '').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&amp;/g,'&');
+            var summary = (btn.dataset.summary || '').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&amp;/g,'&');
+            var teacherFeedback = (btn.dataset.teacherFeedback || '').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&amp;/g,'&');
+
+            document.getElementById('editModalLabelShared').textContent = 'Öğrenci Düzenle — ' + displayName;
+            document.getElementById('editFormShared').action = '/edit-student/' + recordId;
+            document.getElementById('editProjectTitle').value = projectTitle;
+            document.getElementById('editSummary').value = summary;
+            document.getElementById('editTeacherFeedback').value = teacherFeedback;
+
+            var nameInput = document.getElementById('editName');
+            var noInput = document.getElementById('editStudentNo');
+            if (hasUser === '1') {
+                document.getElementById('editReadonlyFields').style.display = 'block';
+                document.getElementById('editEditableFields').style.display = 'none';
+                document.getElementById('editDisplayName').value = displayName;
+                document.getElementById('editDisplayStudentNo').value = displayStudentNo;
+                nameInput.removeAttribute('required');
+                noInput.removeAttribute('required');
+            } else {
+                document.getElementById('editEditableFields').style.display = 'block';
+                document.getElementById('editReadonlyFields').style.display = 'none';
+                document.getElementById('editName').value = name;
+                document.getElementById('editStudentNo').value = studentNo;
+                nameInput.setAttribute('required', 'required');
+                noInput.setAttribute('required', 'required');
+            }
+
+            var modalEl = document.getElementById('editModalShared');
+            var modal = new bootstrap.Modal(modalEl, { backdrop: true, keyboard: true });
+            modal.show();
+    });
+})();
+</script>
+
+<script>
+(function() {
+    var approveBase = "{{ url_for('approve_student', record_id=0) }}".replace(/\/0$/, '');
+    var rejectBase = "{{ url_for('reject_student', record_id=0) }}".replace(/\/0$/, '');
+    var listId = document.getElementById('degerlendirModal') ? document.getElementById('degerlendirModal').dataset.listId || '' : '';
+    document.body.addEventListener('click', function(e) {
+        var btn = e.target.closest('.btn-degerlendir');
+        if (!btn) return;
+        e.preventDefault();
+        var recordId = btn.dataset.recordId || '';
+            var studentName = btn.dataset.studentName || '—';
+            var projectTitle = btn.dataset.projectTitle || '—';
+            var feedback = (btn.dataset.feedback || '').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&amp;/g,'&');
+            var submissionId = btn.dataset.submissionId || '';
+            var assignmentId = btn.dataset.assignmentId || '';
+            var grade = btn.dataset.grade || '';
+
+            document.getElementById('degerlendirModalTitle').textContent = 'Değerlendir — ' + studentName;
+            document.getElementById('degerlendirStudentName').textContent = studentName;
+            document.getElementById('degerlendirProjectTitle').textContent = projectTitle;
+            document.getElementById('degerlendirRecordId').value = recordId;
+            document.getElementById('degerlendirSubmissionId').value = submissionId;
+            document.getElementById('degerlendirGrade').value = grade;
+            document.getElementById('degerlendirFeedback').value = feedback;
+
+            var previewWrap = document.getElementById('degerlendirPreviewWrap');
+            var frame = document.getElementById('degerlendirPreviewFrame');
+            if (submissionId && assignmentId && listId) {
+                frame.src = "{{ url_for('view_file', list_id=0, assignment_id=0, submission_id=0) }}"
+                    .replace('/0/assignment/0/view/0', '/' + listId + '/assignment/' + assignmentId + '/view/' + submissionId);
+                previewWrap.style.display = 'block';
+            } else {
+                frame.src = '';
+                previewWrap.style.display = 'none';
+            }
+
+            var modalEl = document.getElementById('degerlendirModal');
+            var modal = new bootstrap.Modal(modalEl, { backdrop: true, keyboard: true });
+            modal.show();
+    });
+    var degModal = document.getElementById('degerlendirModal');
+    if (degModal) degModal.addEventListener('hidden.bs.modal', function() {
+        document.getElementById('degerlendirPreviewFrame').src = '';
+    });
+    var approveBtn = document.getElementById('degerlendirApproveBtn');
+    if (approveBtn) approveBtn.addEventListener('click', function() {
+        var recordId = document.getElementById('degerlendirRecordId').value;
+        var feedback = document.getElementById('degerlendirFeedback').value || '';
+        var grade = document.getElementById('degerlendirGrade').value || '';
+        var submissionId = document.getElementById('degerlendirSubmissionId').value || '';
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = approveBase + '/' + recordId;
+        var inpF = document.createElement('input');
+        inpF.type = 'hidden';
+        inpF.name = 'teacher_feedback';
+        inpF.value = feedback;
+        form.appendChild(inpF);
+        var inpG = document.createElement('input');
+        inpG.type = 'hidden';
+        inpG.name = 'grade';
+        inpG.value = grade;
+        form.appendChild(inpG);
+        var inpS = document.createElement('input');
+        inpS.type = 'hidden';
+        inpS.name = 'submission_id';
+        inpS.value = submissionId;
+        form.appendChild(inpS);
+        document.body.appendChild(form);
+        form.submit();
+    });
+    var rejectBtn = document.getElementById('degerlendirRejectBtn');
+    if (rejectBtn) rejectBtn.addEventListener('click', function() {
+        var feedback = (document.getElementById('degerlendirFeedback').value || '').trim();
+        if (!feedback) {
+            if (window.showListifyToast) window.showListifyToast('Reddetmek için geri bildirim zorunludur.', 'danger');
+            else alert('Reddetmek için geri bildirim zorunludur.');
+            return;
+        }
+        var recordId = document.getElementById('degerlendirRecordId').value;
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = rejectBase + '/' + recordId;
+        var inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = 'teacher_feedback';
+        inp.value = document.getElementById('degerlendirFeedback').value;
+        form.appendChild(inp);
+        document.body.appendChild(form);
+        form.submit();
+    });
+})();
+</script>
+
+<script>
+(function() {
+    var card = document.getElementById('studentsTableCard');
+    var listId = card ? card.dataset.listId : (function() {
+        var m = /\/list-detail\/(\d+)/.exec(window.location.pathname);
+        return m ? m[1] : null;
+    })();
+    var wrapper = document.getElementById('studentsTableWrapper');
+    var mobileCards = document.getElementById('studentsMobileCards');
+    var actionBar = document.getElementById('bulkActionBar');
+    var btnSecim = document.getElementById('btnSecimModu');
+    var btnSecimKapat = document.getElementById('btnSecimModuKapat');
+    var selectAll = document.getElementById('selectAllCheck');
+    var bulkDeleteModal = document.getElementById('bulkDeleteConfirmModal');
+    var bulkDeleteCountEl = document.getElementById('bulkDeleteCount');
+    var bulkDeleteConfirmBtn = document.getElementById('bulkDeleteConfirmBtn');
+
+    function getSelectedIds() {
+        var ids = [];
+        document.querySelectorAll('.row-check:checked, .row-check-mobile:checked').forEach(function(cb) { ids.push(parseInt(cb.value, 10)); });
+        return ids;
+    }
+
+    function updateBulkCount() {
+        var ids = getSelectedIds();
+        var el = document.getElementById('bulkActionCount');
+        if (el) el.textContent = ids.length + ' adet seçildi';
+    }
+    function toggleSelectionMode(on) {
+        if (on) {
+            if (wrapper) wrapper.classList.add('selection-mode');
+            if (mobileCards) mobileCards.classList.add('selection-mode');
+            if (actionBar) actionBar.style.display = 'block';
+            updateBulkCount();
+        } else {
+            if (wrapper) wrapper.classList.remove('selection-mode');
+            if (mobileCards) mobileCards.classList.remove('selection-mode');
+            if (actionBar) actionBar.style.display = 'none';
+            document.querySelectorAll('.row-check, .row-check-mobile').forEach(function(cb) { cb.checked = false; });
+            if (selectAll) selectAll.checked = false;
+        }
+    }
+
+    if (btnSecim) {
+        btnSecim.addEventListener('click', function(e) {
+            e.preventDefault();
+            toggleSelectionMode(true);
+            try { bootstrap.Dropdown.getInstance(document.getElementById('bulkActionsDropdown')).hide(); } catch (_) {}
+        });
+    }
+    if (btnSecimKapat) {
+        btnSecimKapat.addEventListener('click', function() { toggleSelectionMode(false); });
+    }
+    function updateSilinenCount(n) {
+        document.querySelectorAll('.silinen-count-num').forEach(function(el) { el.textContent = n; });
+        var btn = document.getElementById('btnSilinenOgrenciler');
+        if (btn) btn.style.display = n > 0 ? '' : 'none';
+        var emptyEl = document.getElementById('silinenOgrencilerEmpty');
+        var introEl = document.getElementById('silinenOgrencilerIntro');
+        if (emptyEl) emptyEl.style.display = n > 0 ? 'none' : '';
+        if (introEl) introEl.style.display = n > 0 ? '' : 'none';
+    }
+    function addDeletedRowToModal(rec) {
+        var tbody = document.getElementById('silinenOgrencilerTbody');
+        if (!tbody) return;
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-deleted-record-id', rec.id);
+        tr.innerHTML = '<td>' + (rec.display_name || '—') + '</td><td>' + (rec.display_student_no || '—') + '</td><td class="text-end">' +
+            '<button type="button" class="btn btn-sm btn-outline-success btn-restore-deleted" data-record-id="' + rec.id + '" data-display-name="' + (rec.display_name || '—').replace(/"/g, '&quot;') + '" data-display-student-no="' + (rec.display_student_no || '—').replace(/"/g, '&quot;') + '" data-status="' + (rec.status || 'pending') + '" data-project-title="' + (rec.project_title || '').replace(/"/g, '&quot;') + '" data-list-id="' + (listId || '') + '"><i class="bi bi-arrow-counterclockwise me-1"></i>Geri Yükle</button> ' +
+            '<button type="button" class="btn btn-sm btn-danger btn-permanent-delete-student ms-1" data-record-id="' + rec.id + '" data-list-id="' + (listId || '') + '"><i class="bi bi-trash-fill me-1"></i>Kalıcı Sil</button></td>';
+        tbody.appendChild(tr);
+        tr.querySelector('.btn-restore-deleted').addEventListener('click', onRestoreClick);
+        var permBtn = tr.querySelector('.btn-permanent-delete-student');
+        if (permBtn) permBtn.addEventListener('click', onPermanentDeleteClick);
+    }
+    function addActiveRowToTable(rec) {
+        var statusLabel = rec.status === 'approved' ? 'Onaylandı' : (rec.status === 'rejected' ? 'Reddedildi' : 'Beklemede');
+        var statusClass = rec.status === 'approved' ? 'badge-status-approved' : (rec.status === 'rejected' ? 'badge-status-rejected' : 'badge-status-pending');
+        var name = (rec.display_name || '—').replace(/"/g, '&quot;');
+        var no = (rec.display_student_no || '—').replace(/"/g, '&quot;');
+        var title = (rec.project_title || '—').replace(/"/g, '&quot;');
+        var tr = document.createElement('tr');
+        tr.setAttribute('data-record-id', rec.id);
+        tr.setAttribute('data-display-name', name);
+        tr.setAttribute('data-display-student-no', no);
+        tr.setAttribute('data-status', rec.status || 'pending');
+        tr.setAttribute('data-project-title', rec.project_title || '');
+        tr.innerHTML = '<td class="check-col no-print"><input type="checkbox" class="form-check-input row-check" value="' + rec.id + '" data-status="' + (rec.status || 'pending') + '"></td>' +
+            '<td class="fw-medium">' + (rec.display_name || '—') + '</td><td>' + (rec.display_student_no || '—') + '</td><td>' + (rec.project_title || '—') + '</td>' +
+            '<td><span class="' + statusClass + '">' + statusLabel + '</span></td>' +
+            '<td><div class="mb-1"><span class="badge bg-secondary">Teslim Edilmedi</span></div></td>' +
+            '<td class="text-end no-print"><span class="btn btn-sm btn-outline-secondary btn-touch disabled" title="Dosya yok"><i class="bi bi-eye me-1"></i>İncele</span> ' +
+            '<button type="button" class="btn btn-sm btn-outline-secondary ms-1 btn-degerlendir btn-touch" data-record-id="' + rec.id + '" data-student-name="' + name + '" data-project-title="' + title + '" data-feedback="" data-submission-id="" data-assignment-id="" data-grade="">Değerlendir</button> ' +
+            '<button type="button" class="btn btn-sm btn-outline-secondary btn-duzenle btn-touch" data-record-id="' + rec.id + '" data-display-name="' + name + '" data-has-user="0" data-name="" data-student-no="" data-display-student-no="' + no + '" data-project-title="' + title + '" data-summary="" data-teacher-feedback="">Düzenle</button></td>';
+        var tableBody = document.querySelector('#studentsTableCard tbody');
+        if (tableBody) tableBody.appendChild(tr);
+        var rowCheck = tr.querySelector('.row-check');
+        if (rowCheck) rowCheck.addEventListener('change', function() { var all = document.querySelectorAll('.row-check, .row-check-mobile'); var checked = document.querySelectorAll('.row-check:checked, .row-check-mobile:checked'); if (selectAll) selectAll.checked = all.length > 0 && checked.length === all.length; updateBulkCount(); });
+        var mobileWrap = document.getElementById('studentsMobileCards');
+        if (mobileWrap) {
+            var card = document.createElement('div');
+            card.className = 'card mb-3 student-card-mobile';
+            card.setAttribute('data-record-id', rec.id);
+            card.innerHTML = '<div class="card-body"><div class="check-row-mobile mb-2"><input type="checkbox" class="form-check-input row-check-mobile mt-1" value="' + rec.id + '" data-status="' + (rec.status || 'pending') + '"></div>' +
+                '<p class="fw-medium mb-1">' + (rec.display_name || '—') + '</p><p class="text-muted small mb-1">No: ' + (rec.display_student_no || '—') + '</p><p class="small mb-2">' + (rec.project_title || '—') + '</p>' +
+                '<p class="mb-2"><span class="' + statusClass + '">' + statusLabel + '</span> <span class="badge bg-secondary ms-1">Teslim Edilmedi</span></p>' +
+                '<div class="d-flex gap-2 mt-2 flex-wrap"><span class="btn btn-sm btn-outline-secondary btn-touch disabled" title="Dosya yok"><i class="bi bi-eye me-1"></i>İncele</span> ' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary btn-degerlendir btn-touch" data-record-id="' + rec.id + '" data-student-name="' + name + '" data-project-title="' + title + '" data-feedback="" data-submission-id="" data-assignment-id="" data-grade="">Değerlendir</button> ' +
+                '<button type="button" class="btn btn-sm btn-outline-secondary btn-duzenle btn-touch" data-record-id="' + rec.id + '" data-display-name="' + name + '" data-has-user="0" data-name="" data-student-no="" data-display-student-no="' + no + '" data-project-title="' + title + '" data-summary="" data-teacher-feedback="">Düzenle</button></div></div>';
+            mobileWrap.appendChild(card);
+            var mobileCheck = card.querySelector('.row-check-mobile');
+            if (mobileCheck) mobileCheck.addEventListener('change', function() { var all = document.querySelectorAll('.row-check, .row-check-mobile'); var checked = document.querySelectorAll('.row-check:checked, .row-check-mobile:checked'); if (selectAll) selectAll.checked = all.length > 0 && checked.length === all.length; updateBulkCount(); });
+        }
+    }
+    function onRestoreClick() {
+        var btn = this;
+        var recordId = btn.dataset.recordId;
+        var listId = btn.dataset.listId;
+        if (!recordId || !listId) return;
+        var origHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Yükleniyor...';
+        fetch('/list-detail/' + listId + '/restore-student/' + recordId, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.ok && data.record) {
+                    document.querySelectorAll('tr[data-deleted-record-id="' + recordId + '"]').forEach(function(row) { row.remove(); });
+                    addActiveRowToTable(data.record);
+                    var curTotal = parseInt(document.getElementById('statListTotalStudents').textContent, 10) || 0;
+                    var curPending = parseInt(document.getElementById('statListPendingApprovals').textContent, 10) || 0;
+                    updateStats({ list_total_students: curTotal + 1, list_pending_approvals: data.record.status === 'pending' ? curPending + 1 : curPending });
+                    var count = document.querySelectorAll('#silinenOgrencilerTbody tr').length;
+                    updateSilinenCount(count);
+                    if (window.showListifyToast) window.showListifyToast('Öğrenci geri yüklendi.', 'success');
+                    else alert('Öğrenci geri yüklendi.');
+                } else {
+                    if (window.showListifyToast) window.showListifyToast(data.error || 'İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                    else alert(data.error || 'Hata.');
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            }).catch(function() {
+                if (window.showListifyToast) window.showListifyToast('İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            });
+    }
+    function onPermanentDeleteClick() {
+        var btn = this;
+        var recordId = btn.dataset.recordId;
+        var listId = btn.dataset.listId;
+        if (!recordId || !listId || !confirm('Bu öğrenci kaydı kalıcı olarak silinecek. Bu işlem geri alınamaz. Emin misiniz?')) return;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Yükleniyor...';
+        fetch('/list-detail/' + listId + '/permanent-delete-student/' + recordId, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.ok) {
+                    document.querySelectorAll('tr[data-deleted-record-id="' + recordId + '"]').forEach(function(row) { row.remove(); });
+                    updateSilinenCount(document.querySelectorAll('#silinenOgrencilerTbody tr').length);
+                    if (window.showListifyToast) window.showListifyToast('Kayıt kalıcı olarak silindi.', 'success');
+                    else alert('Kayıt kalıcı olarak silindi.');
+                } else {
+                    if (window.showListifyToast) window.showListifyToast(data.error || 'İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                    else alert(data.error || 'İşlem sırasında bir hata oluştu.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-trash-fill me-1"></i>Kalıcı Sil';
+                }
+            }).catch(function() {
+                if (window.showListifyToast) window.showListifyToast('İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-trash-fill me-1"></i>Kalıcı Sil';
+            });
+    }
+    document.querySelectorAll('.btn-restore-deleted').forEach(function(btn) {
+        btn.addEventListener('click', onRestoreClick);
+    });
+    document.querySelectorAll('.btn-permanent-delete-student').forEach(function(btn) {
+        btn.addEventListener('click', onPermanentDeleteClick);
+    });
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            var checked = this.checked;
+            document.querySelectorAll('.row-check, .row-check-mobile').forEach(function(cb) { cb.checked = checked; });
+        });
+    }
+    document.querySelectorAll('.row-check, .row-check-mobile').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            var all = document.querySelectorAll('.row-check, .row-check-mobile');
+            var checked = document.querySelectorAll('.row-check:checked, .row-check-mobile:checked');
+            if (selectAll) selectAll.checked = all.length > 0 && checked.length === all.length;
+            updateBulkCount();
+        });
+    });
+
+    function updateStats(data) {
+        var elTotal = document.getElementById('statListTotalStudents');
+        var elPending = document.getElementById('statListPendingApprovals');
+        if (elTotal && data.list_total_students !== undefined) elTotal.textContent = data.list_total_students;
+        if (elPending && data.list_pending_approvals !== undefined) elPending.textContent = data.list_pending_approvals;
+    }
+
+    if (document.getElementById('btnSecilenleriSil')) {
+        document.getElementById('btnSecilenleriSil').addEventListener('click', function() {
+            var ids = getSelectedIds();
+            if (ids.length === 0) {
+                if (window.showListifyToast) window.showListifyToast('Lütfen silinecek kayıtları seçin.', 'warning');
+                else alert('Lütfen silinecek kayıtları seçin.');
+                return;
+            }
+            bulkDeleteCountEl.textContent = ids.length;
+            var modal = new bootstrap.Modal(bulkDeleteModal);
+            modal.show();
+            bulkDeleteConfirmBtn.onclick = function() {
+                if (!listId) return;
+                var origBtnHtml = bulkDeleteConfirmBtn.innerHTML;
+                bulkDeleteConfirmBtn.disabled = true;
+                bulkDeleteConfirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>Yükleniyor...';
+                var rowsData = [];
+                ids.forEach(function(id) {
+                    var el = document.querySelector('#studentsTableCard tr[data-record-id="' + id + '"]') || document.querySelector('.student-card-mobile[data-record-id="' + id + '"]');
+                    if (el) rowsData.push({ id: id, display_name: el.getAttribute('data-display-name') || '—', display_student_no: el.getAttribute('data-display-student-no') || '—', status: el.getAttribute('data-status') || 'pending', project_title: el.getAttribute('data-project-title') || '' });
+                });
+                var formData = new FormData();
+                ids.forEach(function(id) { formData.append('record_ids[]', id); });
+                fetch('/list-detail/' + listId + '/bulk-delete', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function(r) { return r.json(); }).then(function(data) {
+                    bulkDeleteConfirmBtn.disabled = false;
+                    bulkDeleteConfirmBtn.innerHTML = origBtnHtml;
+                    if (data.ok) {
+                        ids.forEach(function(id) {
+                            document.querySelectorAll('#studentsTableCard tr[data-record-id="' + id + '"], .student-card-mobile[data-record-id="' + id + '"]').forEach(function(el) { el.remove(); });
+                        });
+                        rowsData.forEach(function(rec) { addDeletedRowToModal(rec); });
+                        updateSilinenCount(document.querySelectorAll('#silinenOgrencilerTbody tr').length);
+                        updateStats(data);
+                        toggleSelectionMode(false);
+                        modal.hide();
+                        if (window.showListifyToast) window.showListifyToast(data.deleted + ' kayıt silindi.', 'success');
+                        else alert(data.deleted + ' kayıt silindi.');
+                    } else {
+                        if (window.showListifyToast) window.showListifyToast(data.error || 'İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                        else alert(data.error || 'İşlem sırasında bir hata oluştu.');
+                    }
+                }).catch(function() {
+                    bulkDeleteConfirmBtn.disabled = false;
+                    bulkDeleteConfirmBtn.innerHTML = origBtnHtml;
+                    if (window.showListifyToast) window.showListifyToast('İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                    else alert('İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.');
+                });
+            };
+        });
+    }
+
+    if (document.getElementById('btnSecilenleriOnayla')) {
+        document.getElementById('btnSecilenleriOnayla').addEventListener('click', function() {
+            if (!listId) return;
+            var ids = getSelectedIds();
+            if (ids.length === 0) {
+                if (window.showListifyToast) window.showListifyToast('Lütfen onaylanacak kayıtları seçin.', 'warning');
+                else alert('Lütfen onaylanacak kayıtları seçin.');
+                return;
+            }
+            var formData = new FormData();
+            ids.forEach(function(id) { formData.append('record_ids[]', id); });
+            fetch('/list-detail/' + listId + '/bulk-approve-selected', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            }).then(function(r) { return r.json();             }).then(function(data) {
+                if (data.ok) {
+                    document.querySelectorAll('.row-check:checked, .row-check-mobile:checked').forEach(function(cb) {
+                        if (cb.dataset.status !== 'pending') return;
+                        var id = cb.value;
+                        document.querySelectorAll('tr[data-record-id="' + id + '"], .student-card-mobile[data-record-id="' + id + '"]').forEach(function(row) {
+                            var badge = row.querySelector('.badge-status-pending');
+                            if (badge) {
+                                badge.className = 'badge-status-approved';
+                                badge.textContent = 'Onaylandı';
+                            }
+                        });
+                    });
+                    updateStats(data);
+                    document.querySelectorAll('.row-check:checked, .row-check-mobile:checked').forEach(function(cb) { cb.checked = false; });
+                    if (selectAll) selectAll.checked = false;
+                    if (window.showListifyToast) window.showListifyToast(data.approved + ' kayıt onaylandı.', 'success');
+                    else alert(data.approved + ' kayıt onaylandı.');
+                } else {
+                    if (window.showListifyToast) window.showListifyToast(data.error || 'Hata oluştu.', 'danger');
+                    else alert(data.error || 'Hata oluştu.');
+                }
+            }).catch(function() {
+                if (window.showListifyToast) window.showListifyToast('İşlem sırasında bir hata oluştu, lütfen internetinizi kontrol edin.', 'danger');
+                else alert('İstek başarısız.');
+            });
+        });
+    }
+})();
+</script>
+
+{% if target_list.is_completed %}
+<script>
+(function() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('open') === 'extend') {
+        const modal = new bootstrap.Modal(document.getElementById('extendModal'));
+        modal.show();
+    }
+})();
+</script>
+{% endif %}
+
+{% if target_list.expires_at and not target_list.is_completed %}
+<script>
+(function() {
+    const box = document.getElementById('countdown-box');
+    const textEl = document.getElementById('countdown-text');
+    if (!box || !textEl) return;
+    const expStr = box.dataset.expires;
+    const expiresAt = expStr && expStr.length >= 19 ? new Date(expStr) : null;
+    if (!expiresAt || isNaN(expiresAt.getTime())) return;
+    function fmt(n) { return String(n).padStart(2, '0'); }
+    let reloadScheduled = false;
+    function update() {
+        const now = new Date();
+        const diff = expiresAt - now;
+        if (diff <= 0) {
+            textEl.textContent = 'Süre doldu';
+            box.classList.add('expired');
+            if (!reloadScheduled) { reloadScheduled = true; setTimeout(function() { location.reload(); }, 2000); }
+            return;
+        }
+        const totalSec = Math.floor(diff / 1000);
+        const sec = totalSec % 60;
+        const totalMin = Math.floor(totalSec / 60);
+        const min = totalMin % 60;
+        const totalHr = Math.floor(totalMin / 60);
+        const hr = totalHr % 24;
+        const days = Math.floor(totalHr / 24);
+        const months = Math.floor(days / 30);
+        const remainingDays = days % 30;
+        var txt = '';
+        if (months > 0) {
+            txt = months + ' ay ' + remainingDays + ' gün ' + fmt(hr) + ' saat ' + fmt(min) + ' dk kaldı';
+        } else if (days > 0) {
+            txt = days + ' gün ' + fmt(hr) + ' saat ' + fmt(min) + ' dk kaldı';
+        } else if (totalHr > 0) {
+            txt = fmt(hr) + ' saat ' + fmt(min) + ' dk ' + fmt(sec) + ' sn kaldı';
+        } else {
+            txt = fmt(min) + ' dk ' + fmt(sec) + ' sn kaldı';
+        }
+        textEl.textContent = txt;
+    }
+    update();
+    setInterval(update, 1000);
+})();
+</script>
+{% endif %}
+{% endblock %}

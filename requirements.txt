@@ -1,0 +1,10 @@
+flask
+flask-sqlalchemy
+flask-login
+reportlab
+psycopg2-binary
+pytz
+gunicorn
+requests
+# Windows'ta libmagic yoksa: python-magic-bin kullanin
+python-magic

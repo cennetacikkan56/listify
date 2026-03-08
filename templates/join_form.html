@@ -1,0 +1,65 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-lg-6 col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header border-0">
+                <h5 class="mb-0">{{ list_info.title }} — Kayıt Formu</h5>
+                {% if list_info.expires_at %}
+                <small class="opacity-90">Kayıt süresi: {{ list_info.expires_at.strftime('%d.%m.%Y %H:%M') }} tarihine kadar</small>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <form action="/save-student/{{ list_info.id }}" method="POST">
+                    {% if join_prefill and join_prefill.readonly %}
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Ad</label>
+                        <input type="text" name="ad" class="form-control" value="{{ join_prefill.ad }}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Soyad</label>
+                        <input type="text" name="soyad" class="form-control" value="{{ join_prefill.soyad }}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Öğrenci Numarası</label>
+                        <input type="text" name="student_no" class="form-control" value="{{ join_prefill.student_no }}" readonly>
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Ad</label>
+                        <input type="text" name="ad" class="form-control" value="{{ form_data.get('ad', '') if form_data else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Soyad</label>
+                        <input type="text" name="soyad" class="form-control" value="{{ form_data.get('soyad', '') if form_data else '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Öğrenci No</label>
+                        <input type="text" name="student_no" class="form-control" value="{{ form_data.get('student_no', '') if form_data else '' }}" placeholder="Sadece rakam" required>
+                        <small class="text-muted">Sadece pozitif rakam giriniz.</small>
+                    </div>
+                    {% endif %}
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Proje Başlığı</label>
+                        <input type="text" name="project_title" id="project_title" class="form-control"
+                            value="{{ form_data.project_title if form_data else '' }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label" style="color:var(--listify-text);">Özet <span class="text-muted">(opsiyonel)</span></label>
+                        <textarea name="summary" id="summary" class="form-control" rows="4">{{ form_data.summary if form_data else '' }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Bilgilerimi Kaydet</button>
+                </form>
+                <p class="text-center text-muted mt-3 mb-0 small">
+                    <a href="{{ url_for('list_assignments_student', list_id=list_info.id) }}" class="text-decoration-none me-3 listify-link">Ödevlere git</a>
+                    {% if current_user.is_authenticated and current_user.role != 'teacher' %}
+                    <a href="{{ url_for('my_records') }}" class="text-decoration-none me-3 listify-link">Kayıtlarıma dön</a>
+                    {% endif %}
+                    <a href="/" class="text-decoration-none listify-link">← Anasayfaya dön</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

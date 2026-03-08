@@ -1,0 +1,10 @@
+# Render.com için örnek yapılandırma
+# Türkiye saati (UTC+3) - TZ değişkeni
+# services:
+#   - type: web
+#     env: python
+#     buildCommand: pip install -r requirements.txt
+#     startCommand: python app.py
+#     envVars:
+#       - key: TZ
+#         value: Europe/Istanbul

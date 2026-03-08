@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-lg-10">
+        <div class="card shadow-sm">
+            <div class="card-header border-0">
+                <h5 class="mb-0">{{ list_info.title }} — Ödevler</h5>
+                <small class="opacity-90">Liste kodu: {{ list_info.unique_code }}</small>
+            </div>
+            <div class="card-body">
+                {% if list_info.announcement %}
+                <div class="announcement-box mb-4" role="alert">
+                    <div class="announcement-label"><i class="bi bi-megaphone-fill me-1"></i>Duyuru</div>
+                    <div class="announcement-text">{{ list_info.announcement }}</div>
+                </div>
+                {% endif %}
+                {% if list_info.assignments %}
+                <div class="list-group list-group-flush">
+                    {% for a in list_info.assignments %}
+                    <!-- DEBUG student_assignments: list_id={{ list_info.id }} a_id={{ a.id }} is_accepting={{ list_info.is_accepting_entries() }} is_submission_open={{ a.is_submission_open() }} -->
+                    <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h6 class="mb-1" style="color:var(--listify-text);">{{ a.title }}</h6>
+                            {% if a.due_date %}
+                            <small class="text-muted"><i class="bi bi-calendar-event"></i> Son teslim: {{ a.due_date.strftime('%d.%m.%Y %H:%M') }}</small>
+                            {% endif %}
+                        </div>
+                        <a href="{{ url_for('submit_homework', list_id=list_info.id, assignment_id=a.id) }}" class="btn btn-primary btn-sm btn-touch">Dosya Yükle</a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted small mb-0 py-3" style="font-weight:400;">Henüz ödev eklenmedi.</p>
+                {% endif %}
+                <hr class="my-4" style="border-color:var(--listify-border);">
+                {% if current_user.is_authenticated and current_user.role != 'teacher' %}
+                <a href="{{ url_for('my_records') }}" class="btn btn-outline-secondary">Kayıtlı Listelerime Dön</a>
+                {% else %}
+                <a href="/" class="btn btn-outline-secondary btn-touch">Anasayfaya Dön</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

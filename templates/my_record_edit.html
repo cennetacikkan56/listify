@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center my-5">
+    <div class="col-12 col-lg-6 col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Kaydı Güncelle — {{ target_list.title }}</h5>
+                <a href="{{ url_for('my_records') }}" class="btn btn-sm btn-outline-secondary btn-touch">← Eklediğim Veriler</a>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('my_record_edit', record_id=record.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Ad Soyad</label>
+                        <input type="text" name="name" class="form-control" value="{{ record.name_surname or '' }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Öğrenci No</label>
+                        <input type="text" name="student_no" class="form-control" value="{{ record.student_no or '' }}" placeholder="Sadece rakam" required>
+                        <small class="text-muted">Sadece pozitif rakam giriniz.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" style="color:var(--listify-text);">Proje Başlığı</label>
+                        <input type="text" name="project_title" class="form-control" value="{{ record.project_title or '' }}" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label" style="color:var(--listify-text);">Özet <span class="text-muted">(opsiyonel)</span></label>
+                        <textarea name="summary" class="form-control" rows="4">{{ record.summary or '' }}</textarea>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" class="btn btn-primary btn-touch">Güncelle</button>
+                        <a href="{{ url_for('my_records') }}" class="btn btn-outline-secondary btn-touch">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="mt-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="mb-0"><i class="bi bi-trash me-2"></i>Çöp Kutusu</h2>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary btn-touch">Panele Dön</a>
+    </div>
+    <p class="text-muted small mb-4">Silinen listeler burada görünür. Geri yükleyebilir veya kalıcı olarak silebilirsiniz.</p>
+    {% if deleted_lists %}
+    <div class="mb-4">
+        <form action="{{ url_for('purge_all_trash') }}" method="POST" class="d-inline" onsubmit="return confirm('Tüm çöp kutusu kalıcı olarak boşaltılacak. Bu işlem geri alınamaz. Emin misiniz?');">
+            <button type="submit" class="btn btn-danger btn-touch"><i class="bi bi-trash-fill me-1"></i>Tüm Çöpü Boşalt</button>
+        </form>
+    </div>
+    <div class="row g-4">
+        {% for liste in deleted_lists %}
+        <div class="col-12 col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">{{ liste.title }}</h5>
+                    <p class="text-muted small mb-3">
+                        <span class="badge" style="background: var(--listify-table-stripe); color: var(--listify-text); border: 1px solid var(--listify-border);">{{ liste.unique_code }}</span>
+                    </p>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <form action="{{ url_for('restore_list', list_id=liste.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-arrow-counterclockwise me-1"></i>Geri Yükle</button>
+                        </form>
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#permanentDeleteModal{{ liste.id }}">
+                            <i class="bi bi-trash-fill me-1"></i>Kalıcı Olarak Sil
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal fade" id="permanentDeleteModal{{ liste.id }}" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content modal-glass">
+                    <div class="modal-header border-bottom">
+                        <h5 class="modal-title fw-bold text-danger">Kalıcı Silme Onayı</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0"><strong>{{ liste.title }}</strong> listesi ve tüm öğrenci kayıtları <strong>kalıcı olarak</strong> silinecek. Bu işlem geri alınamaz. Emin misiniz?</p>
+                    </div>
+                    <div class="modal-footer border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">İptal</button>
+                        <form action="{{ url_for('permanent_delete_list', list_id=liste.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-danger"><i class="bi bi-trash-fill me-1"></i>Evet, Kalıcı Olarak Sil</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body empty-state">
+            <i class="bi bi-trash empty-state-icon d-block"></i>
+            <p class="empty-state-text mb-0">Çöp kutusu boş.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

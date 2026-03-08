@@ -1,0 +1,80 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header border-0 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Ödev Teslimi — {{ assignment.title }}</h5>
+                <a href="{{ url_for('my_records') }}" class="btn btn-sm btn-outline-secondary btn-touch">Kayıtlı Listelerime Dön</a>
+            </div>
+            <div class="card-body">
+                {% if assignment.description %}
+                <div class="mb-4 p-3 rounded" style="background:var(--listify-border);">
+                    <small class="text-muted d-block mb-1">Açıklama:</small>
+                    <p class="mb-0" style="color:var(--listify-text);">{{ assignment.description }}</p>
+                </div>
+                {% endif %}
+                {% if assignment.due_date %}
+                <p class="text-muted small mb-3"><i class="bi bi-calendar-event"></i> Son teslim: {{ assignment.due_date.strftime('%d.%m.%Y %H:%M') }}</p>
+                {% endif %}
+
+                {% if my_submission %}
+                <p class="text-success small mb-3"><i class="bi bi-check-circle"></i> Bu ödeve daha önce dosya yüklediniz ({{ my_submission.submitted_at.strftime('%d.%m.%Y %H:%M') }}). Yeni dosya yüklerseniz üzerine yazılır.</p>
+                <div class="d-flex gap-2 mb-3 flex-wrap">
+                    <a href="{{ url_for('view_my_submission', list_id=list_info.id, assignment_id=assignment.id) }}" class="btn btn-sm btn-outline-primary btn-touch" target="_blank" rel="noopener"><i class="bi bi-eye me-1"></i>Görüntüle</a>
+                    <a href="{{ url_for('download_my_submission', list_id=list_info.id, assignment_id=assignment.id) }}" class="btn btn-sm btn-outline-secondary btn-touch"><i class="bi bi-download me-1"></i>İndir</a>
+                </div>
+                {% endif %}
+
+                <form id="submitHomeworkForm" action="{{ url_for('submit_homework', list_id=list_info.id, assignment_id=assignment.id) }}" method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label class="form-label" style="color:var(--listify-text);">Dosya <span class="text-danger">*</span></label>
+                        <input type="file" name="file" id="submitFileInput" class="form-control" required>
+                        <small class="text-muted d-block mt-1"><strong>Desteklenen:</strong> PDF, PNG, JPG, DOCX, ZIP (maks. 5 MB)</small>
+                        <small class="text-muted d-block">Klasör yüklemek için ZIP kullanın. HTML ve SVG güvenlik nedeniyle kabul edilmez.</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Yükle / Güncelle</button>
+                        <a href="{{ url_for('my_records') }}" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('submitHomeworkForm');
+    var fileInput = document.getElementById('submitFileInput');
+    if (form && fileInput) {
+        var ALLOWED = ['pdf','png','jpg','jpeg','zip','docx'];
+        var BLOCKED = ['html','htm','svg','svgz'];
+        var MAX_MB = 5;
+        form.addEventListener('submit', function(e) {
+            var f = fileInput.files[0];
+            if (!f) { e.preventDefault(); return; }
+            var ext = (f.name.split('.').pop() || '').toLowerCase();
+            if (BLOCKED.indexOf(ext) !== -1) {
+                e.preventDefault();
+                if (window.showListifyToast) window.showListifyToast('HTML ve SVG dosyaları güvenlik nedeniyle kabul edilmez.', 'danger');
+                else alert('HTML ve SVG dosyaları güvenlik nedeniyle kabul edilmez.');
+                return false;
+            }
+            if (ALLOWED.indexOf(ext) === -1) {
+                e.preventDefault();
+                if (window.showListifyToast) window.showListifyToast('Desteklenmeyen dosya türü.', 'danger');
+                else alert('Desteklenmeyen dosya türü. PDF, PNG, JPG, DOCX, ZIP kullanın.');
+                return false;
+            }
+            if (f.size > MAX_MB * 1024 * 1024) {
+                e.preventDefault();
+                if (window.showListifyToast) window.showListifyToast('Dosya boyutu 5MB\'dan küçük olmalıdır.', 'danger');
+                else alert('Dosya boyutu 5MB\'dan küçük olmalıdır.');
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

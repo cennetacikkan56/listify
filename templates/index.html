@@ -1,0 +1,36 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-8 col-lg-6 text-center">
+        {% if current_user.is_authenticated and not is_verified %}
+        <div class="alert alert-warning d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2 small py-2 px-3 mb-4"
+             style="background:#fef3c7;border:1px solid #facc15;color:#92400e;border-radius:0.5rem;">
+            <span class="text-start">
+                Hesabınız henüz doğrulanmadı. Lütfen e-postanızı kontrol edin.
+            </span>
+            <a href="{{ url_for('verify_code') }}" class="btn btn-sm btn-outline-warning">Kodu Gir</a>
+        </div>
+        {% endif %}
+        <h1 class="display-5 fw-bold mb-3" style="color:var(--listify-heading);">Hoş Geldiniz</h1>
+        <p class="lead mb-5" style="color:var(--listify-text);">Listify ile listelerinizi yönetin, öğrenci kayıtlarını ve ödevleri tek yerden takip edin.</p>
+
+        {% if current_user.is_authenticated %}
+        <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+            {% if current_user.role == 'teacher' %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4">Panelime Git</a>
+            {% else %}
+            <a href="{{ url_for('my_records') }}" class="btn btn-primary btn-lg px-4">Kayıtlarıma Git</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary btn-lg px-4">Çıkış Yap</a>
+        </div>
+        {% else %}
+        <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+            <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4">Giriş Yap</a>
+            <a href="{{ url_for('register') }}" class="btn btn-outline-primary btn-lg px-4">Kayıt Ol</a>
+        </div>
+        <p class="small mt-4 mb-0" style="color:var(--listify-text-muted);">Eğitmen veya öğrenci olarak kayıt olup sistemi kullanmaya başlayabilirsiniz.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
