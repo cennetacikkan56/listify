@@ -2769,20 +2769,10 @@ def _ensure_db_columns():
         db.session.rollback()
 
 
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
-    db_url = app.config.get('SQLALCHEMY_DATABASE_URI', '')
-    safe_url = db_url.split('@')[-1] if '@' in db_url else db_url
-    logger.info("DB: %s", safe_url[:80] + ('...' if len(safe_url) > 80 else ''))
-    with app.app_context():
-        db.create_all()
-        _ensure_db_columns()
-        convert_all_passwords()
-        _test_mail_send()
-        _ensure_upload_dirs()
-    port = int(os.environ.get('PORT', 8080))
-    debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
-    logger.info("Uygulama baslatildi: http://0.0.0.0:%s", port)
-    app.run(host='0.0.0.0', port=port, debug=debug)
+if __name__ == "__main__":
+    # Railway'in atadığı portu zorla al, yoksa 5000'i kullan
+    port = int(os.environ.get("PORT", 5000))
+    # host='0.0.0.0' Railway'in dış dünyaya açılması için ŞART
+    app.run(host="0.0.0.0", port=port)
 
 # NOTE: file touched to force deployment diff
