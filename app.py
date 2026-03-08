@@ -2769,10 +2769,10 @@ def _ensure_db_columns():
         db.session.rollback()
 
 
-if __name__ == "__main__":
-    # Railway'in atadığı portu zorla al, yoksa 5000'i kullan
-    port = int(os.environ.get("PORT", 5000))
-    # host='0.0.0.0' Railway'in dış dünyaya açılması için ŞART
-    app.run(host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    # os.environ.get('PORT') ifadesi tırnak içinde OLMAMALI
+    port_str = os.environ.get('PORT', '5000')
+    port = int(port_str) 
+    app.run(host='0.0.0.0', port=port)
 
 # NOTE: file touched to force deployment diff
