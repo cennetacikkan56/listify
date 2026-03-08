@@ -51,6 +51,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'cok-gizli-bir-anahtar-123')
 # ESKİ HALİ: app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'gecici-anahtar')
 # YENİ HALİ (Bunu yapıştır):
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
@@ -2766,6 +2767,10 @@ def _ensure_db_columns():
                 logger.debug("Index %s olusturulamadi (muhtemelen mevcut): %s", idx_name, str(e))
     except Exception:
         db.session.rollback()
+
+
+with app.app_context():
+    db.create_all()
 
 
 if __name__ == '__main__':
