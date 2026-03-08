@@ -69,13 +69,12 @@ else:
     legacy_db = os.path.join(basedir, 'database.db')
     db_path = legacy_db if os.path.isfile(legacy_db) else os.path.join(instance_dir, 'database.db')
 
-# DATABASE_URL varsa (r. PostgreSQL) onu kullan, yoksa SQLite'a d.
-database_url = os.environ.get('DATABASE_URL')
-if database_url:
-    # Render / Heroku uyumluluu iin eski 'postgres://' emasn dzelt
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+# DATABASE_URL varsa (Railway/Heroku PostgreSQL) onu kullan, yoksa SQLite
+uri = os.environ.get('DATABASE_URL')
+if uri:
+    if uri.startswith("postgres://"):
+        uri = uri.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = uri
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 
